@@ -41,7 +41,10 @@
           />
         </svg>
         <div class="brand-text">
-          <span class="brand-eyebrow">SACHSE CONSTRUCTION</span>
+          <div class="brand-eyebrow-row">
+            <span class="brand-eyebrow">SACHSE CONSTRUCTION</span>
+            <span id="headerVersionBadge" class="version-badge" title="Current version">v1.2.0</span>
+          </div>
           <h1 class="app-title">FIELD ASSISTANT</h1>
           <span class="brand-rule" aria-hidden="true"></span>
         </div>
@@ -49,10 +52,10 @@
 
       <div class="header-actions">
         <button
-          id="openUpdateModalBtn"
+          id="pullUpdateBtn"
           class="btn btn-sync"
           type="button"
-          title="Pull latest updates from GitHub"
+          title="Pull latest version from GitHub"
         >
           ↻ UPDATE
         </button>
@@ -117,80 +120,6 @@
   <main id="promptsContainer" class="prompts-container" aria-live="polite">
     <!-- Populated dynamically by sidepanel.js -->
   </main>
-
-  <!-- GitHub Update & Sync Modal -->
-  <aside id="updateModal" class="modal-backdrop" hidden aria-hidden="true">
-    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="updateModalTitle">
-      <div class="modal-header">
-        <div>
-          <span class="brand-eyebrow">GITHUB VERSION SYNC</span>
-          <h2 id="updateModalTitle">UPDATE FROM GITHUB</h2>
-        </div>
-        <button id="closeUpdateModalBtn" class="btn-icon" type="button" aria-label="Close update dialog">✕</button>
-      </div>
-
-      <div class="builder-form">
-        <div class="version-status-box">
-          <div class="version-row">
-            <span>Installed Extension Version:</span>
-            <strong id="localVersionLabel">v1.1.0</strong>
-          </div>
-          <div class="version-row">
-            <span>Synced Library Version:</span>
-            <strong id="syncedVersionLabel">Bundled (v1.1.0)</strong>
-          </div>
-          <div class="version-row">
-            <span>Last Checked:</span>
-            <strong id="lastSyncedTimeLabel">Never</strong>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="githubRepoInput">GitHub Repository (<code>owner/repo</code>)</label>
-          <input
-            id="githubRepoInput"
-            type="text"
-            value="joeripari-lab/Sachse-Field-Helper"
-            placeholder="joeripari-lab/Sachse-Field-Helper"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="githubBranchInput">Branch</label>
-          <input
-            id="githubBranchInput"
-            type="text"
-            value="main"
-            placeholder="main"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="githubTokenInput">GitHub Personal Access Token (Only needed if repo is Private)</label>
-          <input
-            id="githubTokenInput"
-            type="password"
-            placeholder="ghp_... or github_pat_... (optional if repo is public)"
-            autocomplete="off"
-          />
-          <span class="helper-text" style="margin-top:2px;margin-bottom:0;">
-            Pulls the latest <code>data/prompts.json</code> &amp; version metadata directly from GitHub into the app. For full local file updates, you can also run <code>Update_From_GitHub.bat</code> in the extension folder.
-          </span>
-        </div>
-
-        <div id="updateModalFeedback" class="update-feedback" hidden></div>
-
-        <div class="modal-actions">
-          <button type="button" id="resetBundledBtn" class="btn btn-secondary btn-sm" title="Revert to local bundled prompts.json">
-            Use Local File
-          </button>
-          <button type="button" id="pullGithubUpdateBtn" class="btn btn-accent">
-            ↻ Pull Latest from GitHub
-          </button>
-        </div>
-      </div>
-    </div>
-  </aside>
 
   <!-- Custom Prompt Builder Modal / Drawer -->
   <aside id="builderModal" class="modal-backdrop" hidden aria-hidden="true">

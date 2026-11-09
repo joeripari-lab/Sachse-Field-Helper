@@ -1,12 +1,10 @@
-// sidepanel.js - DOM handling, variable injection, clipboard copy, search, custom templates & GitHub Update Sync
+// sidepanel.js - DOM handling, variable injection, clipboard copy, search, custom templates & one-click GitHub Update
 
 const TOKEN_REGEX = /\{\{\s*([a-zA-Z0-9_ -]+?)\s*\}\}/g;
-const DEFAULT_GITHUB_REPO = "joeripari-lab/Sachse-Field-Helper";
-const DEFAULT_GITHUB_BRANCH = "main";
+const GITHUB_REPO = "joeripari-lab/Sachse-Field-Helper";
+const GITHUB_BRANCH = "main";
 
 const state = {
-  bundledCategories: [],
-  bundledDefaultVariables: {},
   categories: [],
   defaultVariables: {},
   globalOverrides: {},
@@ -14,16 +12,16 @@ const state = {
   customPrompts: [],     // Saved in chrome.storage.local & synced when possible
   activeCategory: "all",
   searchQuery: "",
-  githubSettings: {
-    repo: DEFAULT_GITHUB_REPO,
-    branch: DEFAULT_GITHUB_BRANCH,
-    token: ""
-  },
-  syncedVersion: null,
-  lastSyncedAt: null
+  currentVersion: "1.2.0"
 };
 
 // DOM References
+const headerVersionBadge = document.getElementById("headerVersionBadge");
+const pullUpdateBtn = document.getElementById("pullUpdateBtn");
+const syncStatusBanner = document.getElementById("syncStatusBanner");
+const syncStatusText = document.getElementById("syncStatusText");
+const dismissSyncBannerBtn = document.getElementById("dismissSyncBannerBtn");
+
 const searchInput = document.getElementById("searchInput");
 const clearSearchBtn = document.getElementById("clearSearchBtn");
 const categoryTabsEl = document.getElementById("categoryTabs");
@@ -31,25 +29,6 @@ const promptsContainerEl = document.getElementById("promptsContainer");
 const globalVarsGridEl = document.getElementById("globalVarsGrid");
 const applyGlobalVarsBtn = document.getElementById("applyGlobalVarsBtn");
 const resetGlobalVarsBtn = document.getElementById("resetGlobalVarsBtn");
-
-// Sync Status Banner References
-const syncStatusBanner = document.getElementById("syncStatusBanner");
-const syncStatusText = document.getElementById("syncStatusText");
-const dismissSyncBannerBtn = document.getElementById("dismissSyncBannerBtn");
-
-// GitHub Update Modal References
-const openUpdateModalBtn = document.getElementById("openUpdateModalBtn");
-const closeUpdateModalBtn = document.getElementById("closeUpdateModalBtn");
-const updateModal = document.getElementById("updateModal");
-const localVersionLabel = document.getElementById("localVersionLabel");
-const syncedVersionLabel = document.getElementById("syncedVersionLabel");
-const lastSyncedTimeLabel = document.getElementById("lastSyncedTimeLabel");
-const githubRepoInput = document.getElementById("githubRepoInput");
-const githubBranchInput = document.getElementById("githubBranchInput");
-const githubTokenInput = document.getElementById("githubTokenInput");
-const updateModalFeedback = document.getElementById("updateModalFeedback");
-const pullGithubUpdateBtn = document.getElementById("pullGithubUpdateBtn");
-const resetBundledBtn = document.getElementById("resetBundledBtn");
 
 // Builder Modal References
 const openBuilderBtn = document.getElementById("openBuilderBtn");
@@ -67,6 +46,38 @@ const customDefaultsTextarea = document.getElementById("customDefaults");
 const quickTokenBar = document.getElementById("quickTokenBar");
 
 /**
+ * Compare two semver strings (e.g. "1.2.0" vs "1.1.0")
+ * Returns 1 if a > b, -1 if a < b, 0 if equal
+ */
+function compareVersions(a, b) {
+  const pa = String(a || "0.0.0").replace(/^v/i, "").split(".").map(Number);
+  const pb = String(b || "0.0.0").replace(/^v/i, "").split(".").map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const na = pa[i] || 0;
+    const nb = pb[i] || 0;
+    if (na > nb) return 1;
+    if (na < nb) return -1;
+  }
+  return 0;
+}
+
+function getLocalExtensionVersion() {
+  try {
+    return chrome.runtime.getManifest().version || "1.2.0";
+  } catch (_) {
+    return "1.2.0";
+  }
+}
+
+function renderVersionBadge(ver) {
+  const cleanVer = String(ver || getLocalExtensionVersion()).replace(/^v/i, "");
+  state.currentVersion = cleanVer;
+  if (headerVersionBadge) {
+    headerVersionBadge.textContent = `v${cleanVer}`;
+  }
+}
+
+/**
  * Storage Helpers (uses chrome.storage.local as primary with chrome.storage.sync backup)
  */
 async function loadPersistedData() {
@@ -75,9 +86,7 @@ async function loadPersistedData() {
       "customPrompts",
       "variableDefaults",
       "remotePromptLibrary",
-      "syncedVersion",
-      "lastSyncedAt",
-      "githubSettings"
+      "syncedVersion"
     ]);
     const syncData = await chrome.storage.sync.get(["customPrompts"]);
 
@@ -92,13 +101,7 @@ async function loadPersistedData() {
       customPrompts,
       variableDefaults: localData.variableDefaults || {},
       remotePromptLibrary: localData.remotePromptLibrary || null,
-      syncedVersion: localData.syncedVersion || null,
-      lastSyncedAt: localData.lastSyncedAt || null,
-      githubSettings: localData.githubSettings || {
-        repo: DEFAULT_GITHUB_REPO,
-        branch: DEFAULT_GITHUB_BRANCH,
-        token: ""
-      }
+      syncedVersion: localData.syncedVersion || null
     };
   } catch (err) {
     console.warn("Storage read fallback:", err);
@@ -106,13 +109,7 @@ async function loadPersistedData() {
       customPrompts: [],
       variableDefaults: {},
       remotePromptLibrary: null,
-      syncedVersion: null,
-      lastSyncedAt: null,
-      githubSettings: {
-        repo: DEFAULT_GITHUB_REPO,
-        branch: DEFAULT_GITHUB_BRANCH,
-        token: ""
-      }
+      syncedVersion: null
     };
   }
 }
@@ -531,7 +528,7 @@ function buildPromptCardElement(prompt, categoryId) {
   const copyBtn = document.createElement("button");
   copyBtn.type = "button";
   copyBtn.className = "btn btn-copy";
-  copyBtn.textContent = "📋 Copy Hydrated Prompt";
+  copyBtn.textContent = "📋 Copy Copilot Prompt";
 
   copyBtn.addEventListener("click", async () => {
     const hydratedText = hydrateTemplate(prompt.template, currentValues);
@@ -554,7 +551,7 @@ function showCopyFeedback(buttonEl) {
   if (buttonEl.dataset.copyTimerId) {
     clearTimeout(Number(buttonEl.dataset.copyTimerId));
   }
-  const originalLabel = "📋 Copy Hydrated Prompt";
+  const originalLabel = "📋 Copy Copilot Prompt";
   buttonEl.classList.add("copied");
   buttonEl.textContent = "✓ Copied!";
 
@@ -568,160 +565,90 @@ function showCopyFeedback(buttonEl) {
 }
 
 /**
- * GitHub Update & Sync Mechanism
- * Fetches the latest manifest.json and data/prompts.json from the configured GitHub repository
+ * Direct One-Click GitHub Update Mechanism
+ * Pulls the latest manifest.json and data/prompts.json from joeripari-lab/Sachse-Field-Helper
  */
-async function fetchFileFromGitHub(repo, branch, filePath, token) {
-  const cleanRepo = repo.trim().replace(/^https?:\/\/github\.com\//i, "").replace(/\.git$/i, "");
-  const cleanBranch = branch.trim() || "main";
+async function fetchGitHubJson(filePath) {
   const cacheBuster = `t=${Date.now()}`;
-
-  // If token is provided (or trying GitHub API raw endpoint first)
-  const apiUrl = `https://api.github.com/repos/${cleanRepo}/contents/${filePath}?ref=${encodeURIComponent(cleanBranch)}&${cacheBuster}`;
-  const headers = {
-    Accept: "application/vnd.github.v3.raw"
-  };
-  if (token && token.trim()) {
-    headers.Authorization = `Bearer ${token.trim()}`;
+  const rawUrl = `https://raw.githubusercontent.com/${GITHUB_REPO}/${GITHUB_BRANCH}/${filePath}?${cacheBuster}`;
+  const rawResp = await fetch(rawUrl, { cache: "no-store" });
+  if (rawResp.ok) {
+    return await rawResp.json();
   }
 
-  const apiResp = await fetch(apiUrl, { headers, cache: "no-store" });
+  // Fallback to GitHub Contents API
+  const apiUrl = `https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}?ref=${GITHUB_BRANCH}&${cacheBuster}`;
+  const apiResp = await fetch(apiUrl, {
+    headers: { Accept: "application/vnd.github.v3.raw" },
+    cache: "no-store"
+  });
   if (apiResp.ok) {
     return await apiResp.json();
   }
 
-  // Fallback to raw.githubusercontent.com if public repo without token
-  if (!token) {
-    const rawUrl = `https://raw.githubusercontent.com/${cleanRepo}/${encodeURIComponent(cleanBranch)}/${filePath}?${cacheBuster}`;
-    const rawResp = await fetch(rawUrl, { cache: "no-store" });
-    if (rawResp.ok) {
-      return await rawResp.json();
-    }
-  }
-
-  if (apiResp.status === 404 || apiResp.status === 401) {
-    throw new Error(
-      `Repository "${cleanRepo}" returned ${apiResp.status}. Since the repository is Private, please enter a GitHub Personal Access Token (with repo read access) or make the repository public.`
-    );
-  }
-
-  throw new Error(`GitHub sync failed with HTTP ${apiResp.status}.`);
+  throw new Error(`Unable to reach GitHub (${rawResp.status}).`);
 }
 
-function getLocalExtensionVersion() {
-  try {
-    return chrome.runtime.getManifest().version || "1.1.0";
-  } catch (_) {
-    return "1.1.0";
-  }
-}
-
-function updateVersionModalLabels() {
-  const localVer = getLocalExtensionVersion();
-  localVersionLabel.textContent = `v${localVer}`;
-  syncedVersionLabel.textContent = state.syncedVersion
-    ? `v${state.syncedVersion} (GitHub)`
-    : `Bundled (v${localVer})`;
-  lastSyncedTimeLabel.textContent = state.lastSyncedAt
-    ? new Date(state.lastSyncedAt).toLocaleString()
-    : "Never";
-}
-
-function showBannerNotification(message) {
+function showBanner(message, isError = false) {
   syncStatusText.textContent = message;
+  syncStatusBanner.classList.toggle("error", Boolean(isError));
   syncStatusBanner.hidden = false;
 }
 
-async function handlePullFromGitHub() {
-  const repo = githubRepoInput.value.trim() || DEFAULT_GITHUB_REPO;
-  const branch = githubBranchInput.value.trim() || DEFAULT_GITHUB_BRANCH;
-  const token = githubTokenInput.value.trim();
-
-  pullGithubUpdateBtn.disabled = true;
-  pullGithubUpdateBtn.textContent = "↻ Checking GitHub...";
-  updateModalFeedback.hidden = true;
-  updateModalFeedback.classList.remove("error");
+async function pullLatestFromGitHub(silent = false) {
+  if (!silent) {
+    pullUpdateBtn.disabled = true;
+    pullUpdateBtn.textContent = "↻ UPDATING...";
+  }
 
   try {
     const [remoteManifest, remotePrompts] = await Promise.all([
-      fetchFileFromGitHub(repo, branch, "manifest.json", token),
-      fetchFileFromGitHub(repo, branch, "data/prompts.json", token)
+      fetchGitHubJson("manifest.json"),
+      fetchGitHubJson("data/prompts.json")
     ]);
 
     if (!remotePrompts || !Array.isArray(remotePrompts.categories)) {
-      throw new Error("Invalid data/prompts.json structure in GitHub repository.");
+      throw new Error("Invalid prompt library returned from GitHub.");
     }
 
-    const remoteVersion = (remoteManifest && remoteManifest.version) || getLocalExtensionVersion();
-    const nowIso = new Date().toISOString();
+    const remoteVersion =
+      remotePrompts.version ||
+      (remoteManifest && remoteManifest.version) ||
+      state.currentVersion;
 
+    const previousVersion = state.currentVersion;
     state.categories = remotePrompts.categories;
     state.defaultVariables = remotePrompts.defaultVariables || {};
-    state.syncedVersion = remoteVersion;
-    state.lastSyncedAt = nowIso;
-    state.githubSettings = { repo, branch, token };
     state.cardVariableState = {};
 
     await chrome.storage.local.set({
       remotePromptLibrary: remotePrompts,
       syncedVersion: remoteVersion,
-      lastSyncedAt: nowIso,
-      githubSettings: state.githubSettings
+      lastSyncedAt: new Date().toISOString()
     });
 
-    updateVersionModalLabels();
+    renderVersionBadge(remoteVersion);
     renderGlobalVariablesBar();
     renderCategoryTabs();
     renderPrompts();
 
-    const totalPrompts = state.categories.reduce((acc, c) => acc + (c.prompts ? c.prompts.length : 0), 0);
-    const msg = `✓ Updated to GitHub v${remoteVersion} (${totalPrompts} templates synced from ${repo}@${branch})`;
-    updateModalFeedback.textContent = msg;
-    updateModalFeedback.hidden = false;
-    showBannerNotification(`✓ Synced v${remoteVersion} from GitHub`);
+    if (!silent) {
+      if (compareVersions(remoteVersion, previousVersion) > 0) {
+        showBanner(`✓ Updated from v${previousVersion} to v${remoteVersion}!`);
+      } else {
+        showBanner(`✓ Up to date (v${remoteVersion})`);
+      }
+    }
   } catch (err) {
-    updateModalFeedback.textContent = err.message || "Failed to pull update from GitHub.";
-    updateModalFeedback.classList.add("error");
-    updateModalFeedback.hidden = false;
+    if (!silent) {
+      showBanner(`Update failed: ${err.message}`, true);
+    }
   } finally {
-    pullGithubUpdateBtn.disabled = false;
-    pullGithubUpdateBtn.textContent = "↻ Pull Latest from GitHub";
+    if (!silent) {
+      pullUpdateBtn.disabled = false;
+      pullUpdateBtn.textContent = "↻ UPDATE";
+    }
   }
-}
-
-async function handleResetToBundledLibrary() {
-  state.categories = state.bundledCategories;
-  state.defaultVariables = state.bundledDefaultVariables;
-  state.syncedVersion = null;
-  state.lastSyncedAt = null;
-  state.cardVariableState = {};
-
-  await chrome.storage.local.remove(["remotePromptLibrary", "syncedVersion", "lastSyncedAt"]);
-
-  updateVersionModalLabels();
-  renderGlobalVariablesBar();
-  renderCategoryTabs();
-  renderPrompts();
-
-  updateModalFeedback.classList.remove("error");
-  updateModalFeedback.textContent = "Reverted to local bundled data/prompts.json.";
-  updateModalFeedback.hidden = false;
-}
-
-function openUpdateModal() {
-  githubRepoInput.value = state.githubSettings.repo || DEFAULT_GITHUB_REPO;
-  githubBranchInput.value = state.githubSettings.branch || DEFAULT_GITHUB_BRANCH;
-  githubTokenInput.value = state.githubSettings.token || "";
-  updateModalFeedback.hidden = true;
-  updateVersionModalLabels();
-
-  updateModal.hidden = false;
-  updateModal.setAttribute("aria-hidden", "false");
-}
-
-function closeUpdateModal() {
-  updateModal.hidden = true;
-  updateModal.setAttribute("aria-hidden", "true");
 }
 
 /**
@@ -812,10 +739,7 @@ dismissSyncBannerBtn.addEventListener("click", () => {
   syncStatusBanner.hidden = true;
 });
 
-openUpdateModalBtn.addEventListener("click", openUpdateModal);
-closeUpdateModalBtn.addEventListener("click", closeUpdateModal);
-pullGithubUpdateBtn.addEventListener("click", handlePullFromGitHub);
-resetBundledBtn.addEventListener("click", handleResetToBundledLibrary);
+pullUpdateBtn.addEventListener("click", () => pullLatestFromGitHub(false));
 
 applyGlobalVarsBtn.addEventListener("click", async () => {
   const inputs = globalVarsGridEl.querySelectorAll("input[data-global-key]");
@@ -904,9 +828,8 @@ customPromptForm.addEventListener("submit", async (e) => {
 });
 
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") {
-    if (!builderModal.hidden) closeBuilderModal();
-    if (!updateModal.hidden) closeUpdateModal();
+  if (e.key === "Escape" && !builderModal.hidden) {
+    closeBuilderModal();
   }
 });
 
@@ -915,27 +838,32 @@ async function initApp() {
   try {
     const response = await fetch(chrome.runtime.getURL("data/prompts.json"));
     const bundledData = await response.json();
-
-    state.bundledCategories = bundledData.categories || [];
-    state.bundledDefaultVariables = bundledData.defaultVariables || {};
+    const localVer = bundledData.version || getLocalExtensionVersion();
 
     const persisted = await loadPersistedData();
     state.customPrompts = persisted.customPrompts;
-    state.githubSettings = persisted.githubSettings;
-    state.syncedVersion = persisted.syncedVersion;
-    state.lastSyncedAt = persisted.lastSyncedAt;
 
-    // Prefer the local bundled library if its version is newer than or equal to cached remote,
-    // or use remotePromptLibrary if pulled from GitHub
-    const activeLib = persisted.remotePromptLibrary || bundledData;
-    state.categories = activeLib.categories || state.bundledCategories;
-    state.defaultVariables = activeLib.defaultVariables || state.bundledDefaultVariables;
+    // Use whichever library has the higher version (bundled vs cached GitHub sync)
+    let activeLib = bundledData;
+    let activeVer = localVer;
 
+    if (
+      persisted.remotePromptLibrary &&
+      persisted.syncedVersion &&
+      compareVersions(persisted.syncedVersion, localVer) >= 0
+    ) {
+      activeLib = persisted.remotePromptLibrary;
+      activeVer = persisted.syncedVersion;
+    }
+
+    state.categories = activeLib.categories || [];
+    state.defaultVariables = activeLib.defaultVariables || {};
     state.globalOverrides = {
       ...state.defaultVariables,
       ...persisted.variableDefaults
     };
 
+    renderVersionBadge(activeVer);
     renderGlobalVariablesBar();
     renderCategoryTabs();
     renderPrompts();

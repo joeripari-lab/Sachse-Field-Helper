@@ -136,12 +136,30 @@ summary:focus-visible {
   flex-direction: column;
 }
 
+.brand-eyebrow-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .brand-eyebrow {
   font-size: 9.5px;
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--foundation-green);
+  line-height: 1.1;
+}
+
+.version-badge {
+  background-color: rgba(183, 191, 16, 0.2);
+  color: var(--foundation-green);
+  border: 1px solid var(--foundation-green);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
   line-height: 1.1;
 }
 
@@ -176,6 +194,11 @@ summary:focus-visible {
   font-size: 11.5px;
   font-weight: 700;
   border-radius: var(--radius-sm);
+}
+
+.sync-status-banner.error {
+  background-color: #7f1d1d;
+  border-left-color: #f87171;
 }
 
 .sync-status-banner[hidden] {
@@ -676,40 +699,6 @@ summary:focus-visible {
   background-color: var(--base-black);
   border-color: var(--base-black);
   color: var(--foundation-green);
-}
-
-/* Version Status Box inside Update Modal */
-.version-status-box {
-  background-color: #F4F6F6;
-  border: 1px solid var(--border-color);
-  border-left: 4px solid var(--structural-blue);
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-}
-
-.version-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.update-feedback {
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  font-weight: 700;
-  background-color: var(--bg-elevated);
-  border-left: 4px solid var(--iron-teal);
-  color: var(--structural-blue);
-}
-
-.update-feedback.error {
-  border-left-color: #b91c1c;
-  color: #991b1b;
-  background-color: #fef2f2;
 }
 
 /* Empty State */
