@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Superintendent Field Assistant",
+  "version": "1.0.0",
+  "description": "High-contrast jobsite side panel for construction superintendents to hydrate and copy field-log templates, notices, RFIs, and prompts.",
+  "permissions": [
+    "sidePanel",
+    "clipboardWrite",
+    "storage"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open Superintendent Field Assistant"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  }
+}
+

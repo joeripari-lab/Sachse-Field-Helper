@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sachse Superintendent Field Assistant</title>
+  <link rel="stylesheet" href="sidepanel.css" />
+</head>
+<body>
+  <!-- Sticky Top Header & Search Bar -->
+  <header class="app-header">
+    <div class="brand-bar">
+      <div class="brand-title-group">
+        <!-- Sachse Construction Crest (Overlay on Dark/Green Spec) -->
+        <svg
+          class="sachse-crest"
+           width="36"
+          height="36"
+          viewBox="0 0 64 64"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-label="Sachse Construction Crest"
+        >
+          <!-- Outer Foundation Green / Field Green Frame -->
+          <rect x="0" y="0" width="64" height="64" fill="#949300" />
+          <rect x="7" y="7" width="50" height="50" fill="#B7BF10" />
+          <!-- Inner White Crest Frame -->
+          <rect
+            x="7"
+            y="7"
+            width="50"
+            height="50"
+            stroke="#FFFFFF"
+            stroke-width="2.5"
+            fill="none"
+          />
+          <!-- Signature S-Curve Path -->
+          <path
+            d="M31 8.2 C23.5 16.5, 24.5 26.5, 32.5 33.5 C40 40, 40.5 48.5, 34 55.8"
+            stroke="#FFFFFF"
+            stroke-width="4"
+            stroke-linecap="butt"
+            fill="none"
+          />
+        </svg>
+        <div class="brand-text">
+          <span class="brand-eyebrow">SACHSE CONSTRUCTION</span>
+          <h1 class="app-title">FIELD ASSISTANT</h1>
+          <span class="brand-rule" aria-hidden="true"></span>
+        </div>
+      </div>
+      <button id="openBuilderBtn" class="btn btn-accent" type="button" title="Create or Edit Custom Field Template">
+        + CUSTOM
+      </button>
+    </div>
+
+    <div class="search-row">
+      <label for="searchInput" class="sr-only">Search prompts by keyword or tag</label>
+      <input
+        id="searchInput"
+        class="search-input"
+        type="search"
+        placeholder="Search daily logs, RFIs, safety, tags..."
+        autocomplete="off"
+      />
+      <button id="clearSearchBtn" class="btn-icon" type="button" title="Clear search" hidden aria-label="Clear search">
+        ✕
+      </button>
+    </div>
+
+    <!-- Category Filter Pills -->
+    <nav class="category-tabs" id="categoryTabs" aria-label="Template Categories">
+      <!-- Populated dynamically by sidepanel.js -->
+    </nav>
+  </header>
+
+  <!-- Global Quick-Fill Jobsite Context Drawer -->
+  <section class="global-vars-bar">
+    <details id="globalVarsDetails">
+      <summary class="global-vars-summary">
+        <span>JOBSITE DEFAULT VARIABLES</span>
+        <span class="summary-hint">SYNCS ACROSS CARDS</span>
+      </summary>
+      <div class="global-vars-body">
+        <p class="helper-text">
+          Set today's active trade, location, or weather once to pre-fill matching <code>{{Tokens}}</code> across all templates.
+        </p>
+        <div id="globalVarsGrid" class="vars-grid"></div>
+        <div class="global-vars-actions">
+          <button id="applyGlobalVarsBtn" class="btn btn-primary btn-sm" type="button">Apply to All Cards</button>
+          <button id="resetGlobalVarsBtn" class="btn btn-secondary btn-sm" type="button">Reset Defaults</button>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- Main Prompt Accordion / Card Container -->
+  <main id="promptsContainer" class="prompts-container" aria-live="polite">
+    <!-- Populated dynamically by sidepanel.js -->
+  </main>
+
+  <!-- Custom Prompt Builder Modal / Drawer -->
+  <aside id="builderModal" class="modal-backdrop" hidden aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="builderModalTitle">
+      <div class="modal-header">
+        <div>
+          <span class="brand-eyebrow">SACHSE FIELD LIBRARY</span>
+          <h2 id="builderModalTitle">NEW CUSTOM FIELD TEMPLATE</h2>
+        </div>
+        <button id="closeBuilderBtn" class="btn-icon" type="button" aria-label="Close builder">✕</button>
+      </div>
+
+      <form id="customPromptForm" class="builder-form">
+        <input type="hidden" id="customPromptId" value="" />
+
+        <div class="form-group">
+          <label for="customTitle">Template Title *</label>
+          <input
+            id="customTitle"
+            type="text"
+            required
+            placeholder="e.g., Concrete Pour Readiness Checklist"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="customCategory">Category *</label>
+          <select id="customCategory" required>
+            <option value="daily-logs">Daily Logs &amp; Progress</option>
+            <option value="subcontractor-delays">Subcontractor Delays &amp; Notices</option>
+            <option value="safety-incidents">Safety Incidents &amp; Toolbox Talks</option>
+            <option value="rfis-fcds">RFIs &amp; Field Change Directives</option>
+            <option value="deliveries-inspections">Material Deliveries &amp; Inspections</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="customTags">Search Tags (comma-separated)</label>
+          <input
+            id="customTags"
+            type="text"
+            placeholder="concrete, pour, inspection, qaqc"
+          />
+        </div>
+
+        <div class="form-group">
+          <div class="label-row">
+            <label for="customTemplate">Prompt / Field Note Template *</label>
+            <span class="token-hint">Use <code>{{TokenName}}</code> for inputs</span>
+          </div>
+          <div class="quick-token-bar" id="quickTokenBar">
+            <button type="button" class="token-chip" data-token="{{Trade}}">+ {{Trade}}</button>
+            <button type="button" class="token-chip" data-token="{{Location}}">+ {{Location}}</button>
+            <button type="button" class="token-chip" data-token="{{Issue}}">+ {{Issue}}</button>
+            <button type="button" class="token-chip" data-token="{{Impact}}">+ {{Impact}}</button>
+            <button type="button" class="token-chip" data-token="{{Subcontractor}}">+ {{Subcontractor}}</button>
+          </div>
+          <textarea
+            id="customTemplate"
+            rows="6"
+            required
+            placeholder="Subcontractor {{Subcontractor}} ({{Trade}}) reported {{Issue}} at {{Location}}. Schedule impact: {{Impact}}."
+          ></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="customDefaults">Default Token Values (optional, <code>Key=Value</code> per line)</label>
+          <textarea
+            id="customDefaults"
+            rows="3"
+            placeholder="Trade=Concrete&#10;Location=Area C Slab-on-Grade&#10;Impact=Pour delayed 2 hours"
+          ></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="cancelBuilderBtn" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-accent">Save Template</button>
+        </div>
+      </form>
+    </div>
+  </aside>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>

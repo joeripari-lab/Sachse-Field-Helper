@@ -1,0 +1,358 @@
+{
+  "defaultVariables": {
+    "Trade": "Electrical (MEP)",
+    "Subcontractor": "Apex Electrical Services",
+    "Location": "Level 2 - Area B Corridor",
+    "Issue": "Rough-in framing conflict with main ductwork trunkline",
+    "Impact": "4-hour crew standby and potential 1-day slip on wall close-in inspection",
+    "Weather": "Clear, 58°F, Wind 8 mph NW",
+    "CrewSize": "6 Journeymen, 2 Apprentices",
+    "SpecSection": "26 05 33 - Raceway and Boxes",
+    "DrawingRef": "E-202 Rev 3",
+    "Inspector": "City Building Inspector (M. Vance)",
+    "Material": "400A Main Distribution Panelboard",
+    "ActionRequired": "Provide revised routing sketch or confirm ceiling plenum drop by 14:00 today",
+    "Hazard": "Uncovered floor opening / missing perimeter guardrail",
+    "Recipient": "Project Manager / Owner Rep"
+  },
+  "categories": [
+    {
+      "id": "daily-logs",
+      "name": "Daily Logs & Progress",
+      "badge": "LOGS",
+      "prompts": [
+        {
+          "id": "dl-standup-summary",
+          "title": "Daily Field Log Entry (Procore / PlanGrid)",
+          "tags": ["daily log", "procore", "manpower", "progress", "weather"],
+          "variables": {
+            "Weather": "Clear, 58°F, Wind 8 mph NW",
+            "Trade": "Electrical (MEP)",
+            "CrewSize": "6 Journeymen, 2 Apprentices",
+            "Location": "Level 2 - Area B Corridor",
+            "Impact": "On schedule for Friday overhead inspection"
+          },
+          "template": "DAILY FIELD LOG SUMMARY\nWeather/Site Conditions: {{Weather}}\nTrade/Subcontractor: {{Trade}} ({{CrewSize}})\nActive Work Area: {{Location}}\n\nWork Performed Today:\n- Completed overhead rough-in and hanger installation at {{Location}}.\n- Verified layout elevations against latest coordinated shop drawings.\n- Maintained housekeeping and cleared debris from egress paths.\n\nSchedule & Lookahead Status:\n- {{Impact}}."
+        },
+        {
+          "id": "dl-record-clarity",
+          "title": "Daily Record Clarity",
+          "tags": ["scott", "facilities", "rewrite", "daily record", "chronological"],
+          "variables": {
+            "Location": "Level 2 - Area B Corridor",
+            "Trade": "Electrical (MEP)"
+          },
+          "template": "Rewrite this daily work record for {{Trade}} at {{Location}} so it clearly documents the purpose of the work, the problem that was addressed, the work that was completed, the outcome, and any follow-up required. Organize the information in chronological order using concise, professional language suitable for permanent maintenance and field records. Preserve all facts and do not add information that was not provided."
+        },
+        {
+          "id": "dl-completed-work-summary",
+          "title": "Completed Work Summary",
+          "tags": ["scott", "facilities", "completed work", "summary", "verification"],
+          "variables": {
+            "Trade": "Electrical (MEP)",
+            "Location": "Level 2 - Area B Corridor"
+          },
+          "template": "Rewrite these notes for {{Trade}} at {{Location}} as a completed work summary. Clearly state the original need, work performed, materials or equipment used if provided, final result, testing or verification completed, and whether any follow-up remains. Preserve all facts and use concise, professional language."
+        },
+        {
+          "id": "dl-weekly-progress",
+          "title": "Weekly Progress Report",
+          "tags": ["scott", "facilities", "weekly", "report", "priorities"],
+          "variables": {
+            "Location": "Main Building - Levels 1-3",
+            "Impact": "Critical path remains on track; 2 open RFIs pending A/E review"
+          },
+          "template": "Turn these notes for {{Location}} into a concise weekly progress report. Organize the information under Completed Work, Work in Progress, Problems or Delays ({{Impact}}), and Next Week's Priorities. Preserve all facts and clearly identify any needed decisions or follow-up."
+        },
+        {
+          "id": "dl-project-update",
+          "title": "Project Update",
+          "tags": ["scott", "facilities", "project update", "status", "next steps"],
+          "variables": {
+            "Location": "Level 2 - Area B Corridor",
+            "Impact": "Rough-in 85% complete; awaiting ceiling grid release"
+          },
+          "template": "Rewrite this project update for {{Location}} (Current status: {{Impact}}) so it clearly states the purpose of the project, work completed, current status, open issues, delays or risks, and the next steps. Use concise, professional language and preserve all facts."
+        }
+      ]
+    },
+    {
+      "id": "subcontractor-delays",
+      "name": "Subcontractor Delays & Notices",
+      "badge": "DELAYS",
+      "prompts": [
+        {
+          "id": "sd-24hr-notice",
+          "title": "Formal Notice of Crew Delay / Lack of Manpower",
+          "tags": ["delay", "manpower", "notice", "subcontractor", "schedule"],
+          "variables": {
+            "Subcontractor": "Apex Electrical Services",
+            "Trade": "Electrical (MEP)",
+            "Location": "Level 2 - Area B Corridor",
+            "Issue": "Insufficient manpower on site (2 onsite vs. 6 committed in Pull Plan)",
+            "Impact": "Delaying drywall framing close-in and ceiling grid start by 2 working days",
+            "ActionRequired": "Provide recovery manpower plan by 07:00 tomorrow"
+          },
+          "template": "SUBJECT: FIELD NOTICE OF DELAY — {{Subcontractor}} ({{Trade}}) at {{Location}}\n\nPlease accept this as field notification regarding {{Trade}} operations at {{Location}}.\n\nObserved Issue: {{Issue}}\nSchedule Impact: {{Impact}}\nRequired Corrective Action: {{ActionRequired}}\n\nPer the project baseline schedule and weekly subcontractor coordination meeting, immediate corrective action is required to prevent cascading impacts to follow-on trades. Please confirm receipt and recovery crew headcount."
+        },
+        {
+          "id": "sd-trade-damage",
+          "title": "Backcharge / Trade Damage Notification",
+          "tags": ["backcharge", "damage", "rework", "subcontractor"],
+          "variables": {
+            "Subcontractor": "Apex Electrical Services",
+            "Location": "Level 2 - Area B Corridor",
+            "Issue": "Scissor lift impact damaged completed taped drywall corner bead and door frame",
+            "ActionRequired": "Sign field rework acknowledgment or repair within 24 hours"
+          },
+          "template": "FIELD DAMAGE & REWORK NOTICE\nResponsible Party: {{Subcontractor}}\nLocation: {{Location}}\nDescription of Damage: {{Issue}}\n\nPhotos have been logged in Procore Daily Observations. Please coordinate with the Field Superintendent today to {{ActionRequired}}, otherwise corrective work will be performed by others and tracked for cost recovery."
+        },
+        {
+          "id": "sd-contractor-instructions",
+          "title": "Contractor Instructions",
+          "tags": ["scott", "facilities", "directive", "instructions", "scope"],
+          "variables": {
+            "Subcontractor": "Apex Electrical Services",
+            "Location": "Level 2 - Area B Corridor",
+            "ActionRequired": "Complete overhead rough-in and firestopping prior to 15:00 Thursday"
+          },
+          "template": "Rewrite these contractor instructions for {{Subcontractor}} at {{Location}} (Target completion: {{ActionRequired}}) so the required work, location, scope, schedule, access requirements, safety expectations, coordination needs, and completion standard are clear. Use direct, professional language and do not add requirements that were not provided."
+        },
+        {
+          "id": "sd-maintenance-notice",
+          "title": "Maintenance / Utility Shutdown Notice",
+          "tags": ["scott", "facilities", "maintenance notice", "shutdown", "outage"],
+          "variables": {
+            "Location": "Level 2 - Area B Corridor",
+            "Issue": "Scheduled 4-hour electrical panel tie-in shutdown",
+            "Impact": "Temporary power offline from 06:00 to 10:00 Saturday"
+          },
+          "template": "Rewrite this maintenance notice for {{Location}} ({{Issue}}) so it clearly explains what work will occur, why it is needed, the date and time, affected areas, expected impact ({{Impact}}), any preparation required, and whom to contact with questions. Keep the tone professional, calm, and easy to understand."
+        }
+      ]
+    },
+    {
+      "id": "safety-incidents",
+      "name": "Safety Incidents & Toolbox Talks",
+      "badge": "SAFETY",
+      "prompts": [
+        {
+          "id": "sf-incident-report",
+          "title": "Incident Report (Factual & Neutral)",
+          "tags": ["scott", "facilities", "safety", "incident", "near miss", "osha"],
+          "variables": {
+            "Location": "Level 2 - Area B Corridor",
+            "Subcontractor": "Apex Electrical Services",
+            "Issue": "Worker observed on 8-ft A-frame ladder top step near open shaft edge",
+            "ActionRequired": "Immediate work stand-down conducted; area barricaded and foreman counseled"
+          },
+          "template": "Rewrite these notes for {{Subcontractor}} at {{Location}} (Observed event: {{Issue}}; Immediate action: {{ActionRequired}}) as a clear, factual incident report. Include the date, time, location, people involved if provided, what happened, immediate actions taken, observed conditions, notifications made, and follow-up required. Use neutral language, preserve all facts, and do not assign blame or add assumptions."
+        },
+        {
+          "id": "sf-safety-violation",
+          "title": "Safety Observation & Stop-Work Citation",
+          "tags": ["safety", "hazard", "ppe", "fall protection", "stop work"],
+          "variables": {
+            "Subcontractor": "Apex Electrical Services",
+            "Location": "Level 2 - Area B Corridor",
+            "Hazard": "Uncovered floor opening / missing perimeter guardrail",
+            "ActionRequired": "Install OSHA-compliant top/mid rails and toeboard before resuming work in area"
+          },
+          "template": "SAFETY OBSERVATION NOTICE\nSubcontractor: {{Subcontractor}}\nLocation: {{Location}}\nHazard Identified: {{Hazard}}\n\nWork in the immediate hazard zone was paused until the following corrective measure is verified by Site Supervision: {{ActionRequired}}. Please document corrective photo in Procore Safety Observations upon completion."
+        },
+        {
+          "id": "sf-toolbox-talk",
+          "title": "Daily Huddle / Toolbox Talk Log",
+          "tags": ["toolbox talk", "huddle", "jha", "ptp", "safety"],
+          "variables": {
+            "Hazard": "Overhead Lift Operations & Pinch Points",
+            "Location": "Level 2 - Area B Corridor",
+            "CrewSize": "All Active Site Trades (28 Workers)"
+          },
+          "template": "DAILY SAFETY HUDDLE & JHA REVIEW\nTopic Covered: {{Hazard}}\nActive High-Risk Zone: {{Location}}\nAttendance: {{CrewSize}}\n\nKey Controls Reviewed:\n1. Pre-Task Plans (PTPs) submitted and signed by all crew leads prior to shift start.\n2. Spotters and high-visibility barricades verified around {{Location}}.\n3. Housekeeping, cord management, and clear emergency access confirmed."
+        },
+        {
+          "id": "sf-facility-closure",
+          "title": "Facility / Area Closure Notice",
+          "tags": ["scott", "facilities", "closure", "barricade", "hoisting"],
+          "variables": {
+            "Location": "Level 2 - Area B Corridor",
+            "Issue": "Overhead structural steel hoisting and decking",
+            "Impact": "No foot traffic permitted from 07:00 to 15:30; use Stairwell C detour"
+          },
+          "template": "Rewrite this facility closure notice for {{Location}} so it clearly states the location, reason for closure ({{Issue}}), start and expected end time, affected services or access ({{Impact}}), alternate arrangements if provided, and who to contact for questions. Keep it direct, professional, and easy to scan."
+        }
+      ]
+    },
+    {
+      "id": "rfis-fcds",
+      "name": "RFIs & Field Change Directives",
+      "badge": "RFIs / FCD",
+      "prompts": [
+        {
+          "id": "rfi-field-conflict",
+          "title": "Field Conflict RFI Draft (Design vs. Field)",
+          "tags": ["rfi", "conflict", "clash", "drawings", "spec"],
+          "variables": {
+            "Location": "Level 2 - Area B Corridor",
+            "DrawingRef": "E-202 Rev 3",
+            "SpecSection": "26 05 33 - Raceway and Boxes",
+            "Issue": "4-inch conduit rack conflicts with structural steel beam W18x35 at Grid B-4 (bottom of steel 9'-2\" AFF vs. ceiling height 9'-0\" AFF)",
+            "Impact": "Framing and rough-in halted at Grid B-4; need response within 48 hours to hold inspection date",
+            "ActionRequired": "Confirm whether penetration through beam web is permitted or approve soffit drop to 8'-6\" AFF"
+          },
+          "template": "REQUEST FOR INFORMATION (FIELD DRAFT)\nLocation / Grid: {{Location}}\nReference Drawings: {{DrawingRef}}\nSpecification Section: {{SpecSection}}\n\nField Condition / Question:\nDuring field layout at {{Location}}, the following conflict was identified: {{Issue}}.\n\nProposed Field Solution / Request:\n{{ActionRequired}}\n\nSchedule & Cost Impact:\n{{Impact}}"
+        },
+        {
+          "id": "rfi-fcd-tm",
+          "title": "Field Change Directive (FCD) / T&M Verification",
+          "tags": ["fcd", "t&m", "ticket", "change order", "extra work"],
+          "variables": {
+            "Subcontractor": "Apex Electrical Services",
+            "Location": "Level 2 - Area B Corridor",
+            "DrawingRef": "ASI #014 / E-202 Rev 3",
+            "CrewSize": "2 Journeymen (6.0 hrs total)",
+            "Material": "40 LF of 1\" EMT conduit, fire-rated boxes, and strut hangers"
+          },
+          "template": "FIELD TIME & MATERIAL (T&M) VERIFICATION LOG\nSubcontractor: {{Subcontractor}}\nLocation: {{Location}}\nReference Directive: {{DrawingRef}}\n\nVerified Labor Hours: {{CrewSize}}\nVerified Materials Installed: {{Material}}\n\nSuperintendent Note: Signature verifies field time and material quantities observed on site ONLY and does not constitute commercial determination of contract scope entitlement."
+        },
+        {
+          "id": "rfi-work-order-response",
+          "title": "Work Order / Punch Item Response",
+          "tags": ["scott", "facilities", "work order", "punchlist", "response"],
+          "variables": {
+            "Location": "Level 2 - Area B Corridor",
+            "Issue": "Ceiling diffuser alignment and damper balancing"
+          },
+          "template": "Rewrite this work order response regarding '{{Issue}}' at {{Location}} so it clearly states the reported issue, what was found, the work completed, the current condition, and whether any additional action is required. Keep it concise, factual, and suitable for a permanent maintenance record. Do not add facts that were not provided."
+        },
+        {
+          "id": "rfi-budget-justification",
+          "title": "Budget / Field Change Justification",
+          "tags": ["scott", "facilities", "budget", "justification", "cost"],
+          "variables": {
+            "Issue": "Unforeseen existing underground utility relocation",
+            "Impact": "Prevents 5-day foundation excavation stoppage"
+          },
+          "template": "Rewrite this budget justification regarding '{{Issue}}' (Impact: {{Impact}}) so it clearly explains the need, operational or safety impact, recommended purchase or repair, expected benefit, consequences of delaying, and estimated cost if provided. Keep it factual, concise, and suitable for management review."
+        }
+      ]
+    },
+    {
+      "id": "deliveries-inspections",
+      "name": "Material Deliveries & Inspections",
+      "badge": "QA/QC",
+      "prompts": [
+        {
+          "id": "mi-inspection-request",
+          "title": "Municipal / Special Inspection Readiness Log",
+          "tags": ["inspection", "qaqc", "building inspector", "rough-in"],
+          "variables": {
+            "Inspector": "City Building Inspector (M. Vance)",
+            "Trade": "Electrical (MEP)",
+            "Location": "Level 2 - Area B Corridor",
+            "DrawingRef": "E-202 Rev 3",
+            "Impact": "PASSED — Approved to insulate and close one-side drywall"
+          },
+          "template": "INSPECTION RECORD & QA/QC WALK\nInspector / Agency: {{Inspector}}\nTrade / Scope Inspected: {{Trade}}\nLocation: {{Location}}\nApproved Drawings on Site: {{DrawingRef}}\n\nPre-Inspection Verification:\n- Work verified against latest Permitted Drawings and approved Submittals.\n- Firestopping, box support spacing, and grounding verified prior to walk.\n\nInspection Result:\n{{Impact}}"
+        },
+        {
+          "id": "mi-delivery-log",
+          "title": "Material Delivery & OS&D (Over, Short, Damaged) Log",
+          "tags": ["delivery", "material", "osd", "procurement", "staging"],
+          "variables": {
+            "Material": "400A Main Distribution Panelboard",
+            "Subcontractor": "Apex Electrical Services",
+            "Location": "Level 1 Secure Electrical Room 108",
+            "Issue": "No visible shipping damage; packing slip #88412 matches approved submittal; factory test report enclosed"
+          },
+          "template": "MATERIAL DELIVERY & RECEIVING LOG\nMaterial / Equipment: {{Material}}\nReceiving Contractor: {{Subcontractor}}\nStaging / Storage Location: {{Location}}\n\nReceiving Inspection & OS&D Notes:\n- {{Issue}}\n- Photographs of bill of lading, equipment nameplate, and dunnage protection uploaded to Daily Delivery Log."
+        },
+        {
+          "id": "mi-material-request",
+          "title": "Material Request",
+          "tags": ["scott", "facilities", "material", "expedite", "purchasing"],
+          "variables": {
+            "Material": "400A Main Distribution Panelboard",
+            "Location": "Level 2 - Area B Corridor",
+            "SpecSection": "26 24 16 - Panelboards",
+            "Impact": "Needed on site by Monday 07:00 to maintain permanent power milestone"
+          },
+          "template": "Rewrite this material request for {{Material}} (Spec: {{SpecSection}}) at {{Location}} so it clearly states the item needed, quantity, purpose, location or project, urgency ({{Impact}}), preferred date, and any specifications or vendor information provided. Keep it concise and suitable for purchasing approval."
+        }
+      ]
+    },
+    {
+      "id": "email-assistant",
+      "name": "Email & Communication Polishers",
+      "badge": "EMAIL",
+      "prompts": [
+        {
+          "id": "em-clarify-purpose",
+          "title": "Clarify Purpose",
+          "tags": ["scott", "email", "clarify", "purpose", "next step"],
+          "variables": {},
+          "template": "Rewrite this email so the purpose is immediately clear. Start with the reason for the email, organize the information logically, remove unnecessary words, highlight any requested action, and end with a clear next step. Keep my writing style natural, professional, and friendly without sounding like AI wrote it."
+        },
+        {
+          "id": "em-professional",
+          "title": "Professional Tone",
+          "tags": ["scott", "email", "professional", "confident"],
+          "variables": {},
+          "template": "Rewrite this email to sound confident, respectful, and professional while remaining natural and easy to read."
+        },
+        {
+          "id": "em-friendly",
+          "title": "Friendly & Warm",
+          "tags": ["scott", "email", "friendly", "warm", "personable"],
+          "variables": {},
+          "template": "Rewrite this email so it sounds warm, positive, and personable without losing professionalism."
+        },
+        {
+          "id": "em-short-clear",
+          "title": "Short & Clear",
+          "tags": ["scott", "email", "short", "concise", "brief"],
+          "variables": {},
+          "template": "Rewrite this email using the fewest words possible while keeping every important detail."
+        },
+        {
+          "id": "em-customer-reply",
+          "title": "Client / Owner / Customer Reply",
+          "tags": ["scott", "email", "customer", "owner", "client"],
+          "variables": {},
+          "template": "Rewrite this email so the customer feels heard and respected. Clearly explain the solution, avoid blame, and end with an invitation to contact me with questions."
+        },
+        {
+          "id": "em-principal-request",
+          "title": "Stakeholder / Principal Request Response",
+          "tags": ["scott", "facilities", "principal", "administrator", "stakeholder"],
+          "variables": {
+            "Location": "Level 2 - Area B Corridor"
+          },
+          "template": "Rewrite this response to a principal, owner representative, or campus administrator regarding {{Location}} so the request is acknowledged, the issue and planned action are clear, the expected timing is stated if provided, and any needed access or coordination is identified. Keep the tone professional, helpful, and direct."
+        },
+        {
+          "id": "em-follow-up",
+          "title": "Follow Up",
+          "tags": ["scott", "email", "follow up", "reminder", "update"],
+          "variables": {},
+          "template": "Rewrite this as a professional follow-up email. Briefly remind the recipient of the previous communication, explain why I am following up, and ask for an update without sounding pushy."
+        },
+        {
+          "id": "em-grammar-only",
+          "title": "Grammar Only",
+          "tags": ["scott", "email", "grammar", "spelling", "proofread"],
+          "variables": {},
+          "template": "Correct grammar, spelling, punctuation, and formatting only. Do not change my wording, tone, or meaning."
+        },
+        {
+          "id": "em-exec-summary",
+          "title": "Executive Summary (Under 30 Seconds)",
+          "tags": ["scott", "email", "executive", "summary", "30 seconds"],
+          "variables": {},
+          "template": "Rewrite this email so a busy executive can understand it in less than 30 seconds. Put the purpose first, remove unnecessary details, and end with the action requested."
+        }
+      ]
+    }
+  ]
+}
