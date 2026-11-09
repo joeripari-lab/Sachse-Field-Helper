@@ -14,17 +14,15 @@
         <!-- Sachse Construction Crest (Overlay on Dark/Green Spec) -->
         <svg
           class="sachse-crest"
-           width="36"
+          width="36"
           height="36"
           viewBox="0 0 64 64"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           aria-label="Sachse Construction Crest"
         >
-          <!-- Outer Foundation Green / Field Green Frame -->
           <rect x="0" y="0" width="64" height="64" fill="#949300" />
           <rect x="7" y="7" width="50" height="50" fill="#B7BF10" />
-          <!-- Inner White Crest Frame -->
           <rect
             x="7"
             y="7"
@@ -34,7 +32,6 @@
             stroke-width="2.5"
             fill="none"
           />
-          <!-- Signature S-Curve Path -->
           <path
             d="M31 8.2 C23.5 16.5, 24.5 26.5, 32.5 33.5 C40 40, 40.5 48.5, 34 55.8"
             stroke="#FFFFFF"
@@ -49,9 +46,31 @@
           <span class="brand-rule" aria-hidden="true"></span>
         </div>
       </div>
-      <button id="openBuilderBtn" class="btn btn-accent" type="button" title="Create or Edit Custom Field Template">
-        + CUSTOM
-      </button>
+
+      <div class="header-actions">
+        <button
+          id="openUpdateModalBtn"
+          class="btn btn-sync"
+          type="button"
+          title="Pull latest updates from GitHub"
+        >
+          ↻ UPDATE
+        </button>
+        <button
+          id="openBuilderBtn"
+          class="btn btn-accent"
+          type="button"
+          title="Create or Edit Custom Field Template"
+        >
+          + CUSTOM
+        </button>
+      </div>
+    </div>
+
+    <!-- GitHub Sync Status Banner -->
+    <div id="syncStatusBanner" class="sync-status-banner" hidden>
+      <span id="syncStatusText"></span>
+      <button id="dismissSyncBannerBtn" class="btn-banner-close" type="button" aria-label="Dismiss">✕</button>
     </div>
 
     <div class="search-row">
@@ -99,6 +118,80 @@
     <!-- Populated dynamically by sidepanel.js -->
   </main>
 
+  <!-- GitHub Update & Sync Modal -->
+  <aside id="updateModal" class="modal-backdrop" hidden aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="updateModalTitle">
+      <div class="modal-header">
+        <div>
+          <span class="brand-eyebrow">GITHUB VERSION SYNC</span>
+          <h2 id="updateModalTitle">UPDATE FROM GITHUB</h2>
+        </div>
+        <button id="closeUpdateModalBtn" class="btn-icon" type="button" aria-label="Close update dialog">✕</button>
+      </div>
+
+      <div class="builder-form">
+        <div class="version-status-box">
+          <div class="version-row">
+            <span>Installed Extension Version:</span>
+            <strong id="localVersionLabel">v1.1.0</strong>
+          </div>
+          <div class="version-row">
+            <span>Synced Library Version:</span>
+            <strong id="syncedVersionLabel">Bundled (v1.1.0)</strong>
+          </div>
+          <div class="version-row">
+            <span>Last Checked:</span>
+            <strong id="lastSyncedTimeLabel">Never</strong>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="githubRepoInput">GitHub Repository (<code>owner/repo</code>)</label>
+          <input
+            id="githubRepoInput"
+            type="text"
+            value="joeripari-lab/Sachse-Field-Helper"
+            placeholder="joeripari-lab/Sachse-Field-Helper"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="githubBranchInput">Branch</label>
+          <input
+            id="githubBranchInput"
+            type="text"
+            value="main"
+            placeholder="main"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="githubTokenInput">GitHub Personal Access Token (Only needed if repo is Private)</label>
+          <input
+            id="githubTokenInput"
+            type="password"
+            placeholder="ghp_... or github_pat_... (optional if repo is public)"
+            autocomplete="off"
+          />
+          <span class="helper-text" style="margin-top:2px;margin-bottom:0;">
+            Pulls the latest <code>data/prompts.json</code> &amp; version metadata directly from GitHub into the app. For full local file updates, you can also run <code>Update_From_GitHub.bat</code> in the extension folder.
+          </span>
+        </div>
+
+        <div id="updateModalFeedback" class="update-feedback" hidden></div>
+
+        <div class="modal-actions">
+          <button type="button" id="resetBundledBtn" class="btn btn-secondary btn-sm" title="Revert to local bundled prompts.json">
+            Use Local File
+          </button>
+          <button type="button" id="pullGithubUpdateBtn" class="btn btn-accent">
+            ↻ Pull Latest from GitHub
+          </button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
   <!-- Custom Prompt Builder Modal / Drawer -->
   <aside id="builderModal" class="modal-backdrop" hidden aria-hidden="true">
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="builderModalTitle">
@@ -131,6 +224,7 @@
             <option value="safety-incidents">Safety Incidents &amp; Toolbox Talks</option>
             <option value="rfis-fcds">RFIs &amp; Field Change Directives</option>
             <option value="deliveries-inspections">Material Deliveries &amp; Inspections</option>
+            <option value="email-assistant">Email &amp; Communication Polishers</option>
           </select>
         </div>
 
@@ -149,6 +243,7 @@
             <span class="token-hint">Use <code>{{TokenName}}</code> for inputs</span>
           </div>
           <div class="quick-token-bar" id="quickTokenBar">
+            <button type="button" class="token-chip" data-token="{{Notes}}">+ {{Notes}}</button>
             <button type="button" class="token-chip" data-token="{{Trade}}">+ {{Trade}}</button>
             <button type="button" class="token-chip" data-token="{{Location}}">+ {{Location}}</button>
             <button type="button" class="token-chip" data-token="{{Issue}}">+ {{Issue}}</button>
@@ -159,7 +254,7 @@
             id="customTemplate"
             rows="6"
             required
-            placeholder="Subcontractor {{Subcontractor}} ({{Trade}}) reported {{Issue}} at {{Location}}. Schedule impact: {{Impact}}."
+            placeholder="Rewrite these notes clearly:\n\nNotes:\n{{Notes}}"
           ></textarea>
         </div>
 

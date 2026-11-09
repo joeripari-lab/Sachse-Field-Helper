@@ -109,7 +109,7 @@ summary:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 10px;
 }
 
@@ -117,6 +117,13 @@ summary:focus-visible {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
 }
 
 .sachse-crest {
@@ -139,9 +146,9 @@ summary:focus-visible {
 }
 
 .app-title {
-  font-size: 15px;
+  font-size: 14.5px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
   color: #FFFFFF;
   margin-top: 2px;
@@ -153,6 +160,35 @@ summary:focus-visible {
   height: 2px;
   background-color: var(--foundation-green);
   margin-top: 4px;
+}
+
+/* Sync Status Banner */
+.sync-status-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background-color: var(--evergreen);
+  border-left: 3px solid var(--foundation-green);
+  color: #FFFFFF;
+  padding: 5px 8px;
+  margin-bottom: 8px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+}
+
+.sync-status-banner[hidden] {
+  display: none !important;
+}
+
+.btn-banner-close {
+  background: transparent;
+  border: none;
+  color: #D9E6E9;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
 }
 
 /* Search Input Row */
@@ -491,6 +527,12 @@ summary:focus-visible {
   font-family: inherit;
 }
 
+.var-textarea {
+  min-height: 82px;
+  resize: vertical;
+  line-height: 1.4;
+}
+
 .var-input:focus {
   border-color: var(--structural-blue);
 }
@@ -521,11 +563,11 @@ summary:focus-visible {
 
 /* Buttons & Touch Targets */
 .btn {
-  min-height: 38px;
-  padding: 7px 12px;
-  font-size: 12px;
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
   border-radius: var(--radius-sm);
   border: 1px solid transparent;
@@ -533,7 +575,7 @@ summary:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   font-family: inherit;
   transition: background-color 0.14s ease, transform 0.06s ease;
 }
@@ -543,9 +585,9 @@ summary:focus-visible {
 }
 
 .btn-sm {
-  min-height: 32px;
-  padding: 4px 10px;
-  font-size: 11px;
+  min-height: 30px;
+  padding: 4px 9px;
+  font-size: 10.5px;
 }
 
 .btn-primary {
@@ -555,6 +597,17 @@ summary:focus-visible {
 
 .btn-primary:hover {
   background-color: var(--evergreen);
+}
+
+.btn-sync {
+  background-color: var(--evergreen);
+  color: #FFFFFF;
+  border-color: var(--steel-blue);
+}
+
+.btn-sync:hover {
+  background-color: var(--iron-teal);
+  border-color: var(--foundation-green);
 }
 
 .btn-accent {
@@ -623,6 +676,40 @@ summary:focus-visible {
   background-color: var(--base-black);
   border-color: var(--base-black);
   color: var(--foundation-green);
+}
+
+/* Version Status Box inside Update Modal */
+.version-status-box {
+  background-color: #F4F6F6;
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--structural-blue);
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.version-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.update-feedback {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 700;
+  background-color: var(--bg-elevated);
+  border-left: 4px solid var(--iron-teal);
+  color: var(--structural-blue);
+}
+
+.update-feedback.error {
+  border-left-color: #b91c1c;
+  color: #991b1b;
+  background-color: #fef2f2;
 }
 
 /* Empty State */

@@ -1,15 +1,26 @@
-// sidepanel.js - DOM handling, variable injection, clipboard copy, search & custom templates
+// sidepanel.js - DOM handling, variable injection, clipboard copy, search, custom templates & GitHub Update Sync
 
 const TOKEN_REGEX = /\{\{\s*([a-zA-Z0-9_ -]+?)\s*\}\}/g;
+const DEFAULT_GITHUB_REPO = "joeripari-lab/Sachse-Field-Helper";
+const DEFAULT_GITHUB_BRANCH = "main";
 
 const state = {
+  bundledCategories: [],
+  bundledDefaultVariables: {},
   categories: [],
   defaultVariables: {},
   globalOverrides: {},
   cardVariableState: {}, // { [promptId]: { [tokenName]: currentValue } }
   customPrompts: [],     // Saved in chrome.storage.local & synced when possible
   activeCategory: "all",
-  searchQuery: ""
+  searchQuery: "",
+  githubSettings: {
+    repo: DEFAULT_GITHUB_REPO,
+    branch: DEFAULT_GITHUB_BRANCH,
+    token: ""
+  },
+  syncedVersion: null,
+  lastSyncedAt: null
 };
 
 // DOM References
@@ -20,6 +31,25 @@ const promptsContainerEl = document.getElementById("promptsContainer");
 const globalVarsGridEl = document.getElementById("globalVarsGrid");
 const applyGlobalVarsBtn = document.getElementById("applyGlobalVarsBtn");
 const resetGlobalVarsBtn = document.getElementById("resetGlobalVarsBtn");
+
+// Sync Status Banner References
+const syncStatusBanner = document.getElementById("syncStatusBanner");
+const syncStatusText = document.getElementById("syncStatusText");
+const dismissSyncBannerBtn = document.getElementById("dismissSyncBannerBtn");
+
+// GitHub Update Modal References
+const openUpdateModalBtn = document.getElementById("openUpdateModalBtn");
+const closeUpdateModalBtn = document.getElementById("closeUpdateModalBtn");
+const updateModal = document.getElementById("updateModal");
+const localVersionLabel = document.getElementById("localVersionLabel");
+const syncedVersionLabel = document.getElementById("syncedVersionLabel");
+const lastSyncedTimeLabel = document.getElementById("lastSyncedTimeLabel");
+const githubRepoInput = document.getElementById("githubRepoInput");
+const githubBranchInput = document.getElementById("githubBranchInput");
+const githubTokenInput = document.getElementById("githubTokenInput");
+const updateModalFeedback = document.getElementById("updateModalFeedback");
+const pullGithubUpdateBtn = document.getElementById("pullGithubUpdateBtn");
+const resetBundledBtn = document.getElementById("resetBundledBtn");
 
 // Builder Modal References
 const openBuilderBtn = document.getElementById("openBuilderBtn");
@@ -41,21 +71,49 @@ const quickTokenBar = document.getElementById("quickTokenBar");
  */
 async function loadPersistedData() {
   try {
-    const localData = await chrome.storage.local.get(["customPrompts", "variableDefaults"]);
+    const localData = await chrome.storage.local.get([
+      "customPrompts",
+      "variableDefaults",
+      "remotePromptLibrary",
+      "syncedVersion",
+      "lastSyncedAt",
+      "githubSettings"
+    ]);
     const syncData = await chrome.storage.sync.get(["customPrompts"]);
 
     const customPrompts =
-      (Array.isArray(localData.customPrompts) && localData.customPrompts.length > 0)
+      Array.isArray(localData.customPrompts) && localData.customPrompts.length > 0
         ? localData.customPrompts
-        : (Array.isArray(syncData.customPrompts) ? syncData.customPrompts : []);
+        : Array.isArray(syncData.customPrompts)
+        ? syncData.customPrompts
+        : [];
 
     return {
       customPrompts,
-      variableDefaults: localData.variableDefaults || {}
+      variableDefaults: localData.variableDefaults || {},
+      remotePromptLibrary: localData.remotePromptLibrary || null,
+      syncedVersion: localData.syncedVersion || null,
+      lastSyncedAt: localData.lastSyncedAt || null,
+      githubSettings: localData.githubSettings || {
+        repo: DEFAULT_GITHUB_REPO,
+        branch: DEFAULT_GITHUB_BRANCH,
+        token: ""
+      }
     };
   } catch (err) {
     console.warn("Storage read fallback:", err);
-    return { customPrompts: [], variableDefaults: {} };
+    return {
+      customPrompts: [],
+      variableDefaults: {},
+      remotePromptLibrary: null,
+      syncedVersion: null,
+      lastSyncedAt: null,
+      githubSettings: {
+        repo: DEFAULT_GITHUB_REPO,
+        branch: DEFAULT_GITHUB_BRANCH,
+        token: ""
+      }
+    };
   }
 }
 
@@ -65,7 +123,7 @@ async function saveCustomPrompts(customPrompts) {
   try {
     await chrome.storage.sync.set({ customPrompts });
   } catch (_) {
-    // Ignore sync quota warnings if user has a large custom library; local storage is authoritative
+    // Ignore sync quota warnings if user has a large custom library
   }
 }
 
@@ -164,18 +222,27 @@ function getCardValues(prompt) {
 }
 
 /**
+ * Sanitize tags so #scott is never shown
+ */
+function sanitizeTags(tags) {
+  if (!Array.isArray(tags)) return [];
+  return tags.filter((t) => String(t).trim().toLowerCase() !== "scott");
+}
+
+/**
  * Combine built-in categories with user custom prompts
  */
 function getMergedCategories() {
   return state.categories.map((cat) => {
     const customForCat = state.customPrompts
       .filter((cp) => cp.categoryId === cat.id)
-      .map((cp) => ({ ...cp, isCustom: true }));
+      .map((cp) => ({ ...cp, tags: sanitizeTags(cp.tags), isCustom: true }));
 
-    const mergedPrompts = cat.prompts.map((builtIn) => {
-      // Allow editing/overriding built-in templates if desired, or keep custom first
-      return { ...builtIn, isCustom: false };
-    });
+    const mergedPrompts = cat.prompts.map((builtIn) => ({
+      ...builtIn,
+      tags: sanitizeTags(builtIn.tags),
+      isCustom: false
+    }));
 
     return {
       ...cat,
@@ -308,14 +375,14 @@ function renderPrompts() {
     emptyEl.className = "empty-state";
     emptyEl.innerHTML = `
       <p><strong>No matching field templates found.</strong></p>
-      <p style="margin-top:4px;font-size:12px;">Try clearing your search filter or click <strong>+ Custom</strong> to build a new template.</p>
+      <p style="margin-top:4px;font-size:12px;">Try clearing your search filter or click <strong>+ CUSTOM</strong> to build a new template.</p>
     `;
     promptsContainerEl.appendChild(emptyEl);
   }
 }
 
 /**
- * Create a single Prompt Card with inline variable inputs, live preview, and one-click copy
+ * Create a single Prompt Card with inline variable inputs (including multiline Notes box), live preview, and one-click copy
  */
 function buildPromptCardElement(prompt, categoryId) {
   const card = document.createElement("article");
@@ -374,7 +441,8 @@ function buildPromptCardElement(prompt, categoryId) {
   card.appendChild(topRow);
 
   // Tag pills
-  if ((prompt.tags && prompt.tags.length > 0) || prompt.isCustom) {
+  const cleanTags = sanitizeTags(prompt.tags);
+  if (cleanTags.length > 0 || prompt.isCustom) {
     const tagList = document.createElement("div");
     tagList.className = "tag-list";
 
@@ -385,7 +453,7 @@ function buildPromptCardElement(prompt, categoryId) {
       tagList.appendChild(customBadge);
     }
 
-    (prompt.tags || []).forEach((tag) => {
+    cleanTags.forEach((tag) => {
       const pill = document.createElement("span");
       pill.className = "tag-pill";
       pill.textContent = `#${tag}`;
@@ -405,9 +473,10 @@ function buildPromptCardElement(prompt, categoryId) {
     const varsBox = document.createElement("div");
     varsBox.className = "vars-box";
 
+    const isNotesOnly = tokens.length === 1 && tokens[0].toLowerCase() === "notes";
     const varsHeader = document.createElement("div");
     varsHeader.className = "vars-box-header";
-    varsHeader.innerHTML = `<span>Inline Variables (${tokens.length})</span>`;
+    varsHeader.innerHTML = `<span>${isNotesOnly ? "Field Notes Input" : `Inline Variables (${tokens.length})`}</span>`;
     varsBox.appendChild(varsHeader);
 
     const varsGrid = document.createElement("div");
@@ -416,28 +485,39 @@ function buildPromptCardElement(prompt, categoryId) {
     tokens.forEach((tokenName) => {
       const field = document.createElement("div");
       const valStr = currentValues[tokenName] || "";
+      const isMultilineNotes = tokenName.toLowerCase().includes("notes");
       const isLongField =
+        isMultilineNotes ||
         valStr.length > 34 ||
         ["Issue", "Impact", "ActionRequired", "Hazard"].includes(tokenName);
       field.className = `var-field ${isLongField ? "full-width" : ""}`;
 
       const label = document.createElement("label");
       label.className = "var-label";
-      label.textContent = `{{${tokenName}}}`;
+      label.textContent = isMultilineNotes ? "Notes (copied with prompt instruction)" : `{{${tokenName}}}`;
 
-      const input = document.createElement("input");
-      input.type = "text";
-      input.className = "var-input";
-      input.value = valStr;
-      input.placeholder = `Enter ${tokenName}...`;
+      let inputEl;
+      if (isMultilineNotes) {
+        inputEl = document.createElement("textarea");
+        inputEl.className = "var-input var-textarea";
+        inputEl.rows = 4;
+        inputEl.value = valStr;
+        inputEl.placeholder = "Paste or type your raw daily log notes here...";
+      } else {
+        inputEl = document.createElement("input");
+        inputEl.type = "text";
+        inputEl.className = "var-input";
+        inputEl.value = valStr;
+        inputEl.placeholder = `Enter ${tokenName}...`;
+      }
 
-      input.addEventListener("input", (e) => {
+      inputEl.addEventListener("input", (e) => {
         currentValues[tokenName] = e.target.value;
         previewEl.innerHTML = buildHighlightedPreviewHtml(prompt.template, currentValues);
       });
 
       field.appendChild(label);
-      field.appendChild(input);
+      field.appendChild(inputEl);
       varsGrid.appendChild(field);
     });
 
@@ -468,7 +548,7 @@ function buildPromptCardElement(prompt, categoryId) {
 }
 
 /**
- * Visual Feedback on Copy (Turns green, displays "Copied!", reverts after 1.5s)
+ * Visual Feedback on Copy (Turns Iron Teal, displays "Copied!", reverts after 1.5s)
  */
 function showCopyFeedback(buttonEl) {
   if (buttonEl.dataset.copyTimerId) {
@@ -488,10 +568,167 @@ function showCopyFeedback(buttonEl) {
 }
 
 /**
+ * GitHub Update & Sync Mechanism
+ * Fetches the latest manifest.json and data/prompts.json from the configured GitHub repository
+ */
+async function fetchFileFromGitHub(repo, branch, filePath, token) {
+  const cleanRepo = repo.trim().replace(/^https?:\/\/github\.com\//i, "").replace(/\.git$/i, "");
+  const cleanBranch = branch.trim() || "main";
+  const cacheBuster = `t=${Date.now()}`;
+
+  // If token is provided (or trying GitHub API raw endpoint first)
+  const apiUrl = `https://api.github.com/repos/${cleanRepo}/contents/${filePath}?ref=${encodeURIComponent(cleanBranch)}&${cacheBuster}`;
+  const headers = {
+    Accept: "application/vnd.github.v3.raw"
+  };
+  if (token && token.trim()) {
+    headers.Authorization = `Bearer ${token.trim()}`;
+  }
+
+  const apiResp = await fetch(apiUrl, { headers, cache: "no-store" });
+  if (apiResp.ok) {
+    return await apiResp.json();
+  }
+
+  // Fallback to raw.githubusercontent.com if public repo without token
+  if (!token) {
+    const rawUrl = `https://raw.githubusercontent.com/${cleanRepo}/${encodeURIComponent(cleanBranch)}/${filePath}?${cacheBuster}`;
+    const rawResp = await fetch(rawUrl, { cache: "no-store" });
+    if (rawResp.ok) {
+      return await rawResp.json();
+    }
+  }
+
+  if (apiResp.status === 404 || apiResp.status === 401) {
+    throw new Error(
+      `Repository "${cleanRepo}" returned ${apiResp.status}. Since the repository is Private, please enter a GitHub Personal Access Token (with repo read access) or make the repository public.`
+    );
+  }
+
+  throw new Error(`GitHub sync failed with HTTP ${apiResp.status}.`);
+}
+
+function getLocalExtensionVersion() {
+  try {
+    return chrome.runtime.getManifest().version || "1.1.0";
+  } catch (_) {
+    return "1.1.0";
+  }
+}
+
+function updateVersionModalLabels() {
+  const localVer = getLocalExtensionVersion();
+  localVersionLabel.textContent = `v${localVer}`;
+  syncedVersionLabel.textContent = state.syncedVersion
+    ? `v${state.syncedVersion} (GitHub)`
+    : `Bundled (v${localVer})`;
+  lastSyncedTimeLabel.textContent = state.lastSyncedAt
+    ? new Date(state.lastSyncedAt).toLocaleString()
+    : "Never";
+}
+
+function showBannerNotification(message) {
+  syncStatusText.textContent = message;
+  syncStatusBanner.hidden = false;
+}
+
+async function handlePullFromGitHub() {
+  const repo = githubRepoInput.value.trim() || DEFAULT_GITHUB_REPO;
+  const branch = githubBranchInput.value.trim() || DEFAULT_GITHUB_BRANCH;
+  const token = githubTokenInput.value.trim();
+
+  pullGithubUpdateBtn.disabled = true;
+  pullGithubUpdateBtn.textContent = "↻ Checking GitHub...";
+  updateModalFeedback.hidden = true;
+  updateModalFeedback.classList.remove("error");
+
+  try {
+    const [remoteManifest, remotePrompts] = await Promise.all([
+      fetchFileFromGitHub(repo, branch, "manifest.json", token),
+      fetchFileFromGitHub(repo, branch, "data/prompts.json", token)
+    ]);
+
+    if (!remotePrompts || !Array.isArray(remotePrompts.categories)) {
+      throw new Error("Invalid data/prompts.json structure in GitHub repository.");
+    }
+
+    const remoteVersion = (remoteManifest && remoteManifest.version) || getLocalExtensionVersion();
+    const nowIso = new Date().toISOString();
+
+    state.categories = remotePrompts.categories;
+    state.defaultVariables = remotePrompts.defaultVariables || {};
+    state.syncedVersion = remoteVersion;
+    state.lastSyncedAt = nowIso;
+    state.githubSettings = { repo, branch, token };
+    state.cardVariableState = {};
+
+    await chrome.storage.local.set({
+      remotePromptLibrary: remotePrompts,
+      syncedVersion: remoteVersion,
+      lastSyncedAt: nowIso,
+      githubSettings: state.githubSettings
+    });
+
+    updateVersionModalLabels();
+    renderGlobalVariablesBar();
+    renderCategoryTabs();
+    renderPrompts();
+
+    const totalPrompts = state.categories.reduce((acc, c) => acc + (c.prompts ? c.prompts.length : 0), 0);
+    const msg = `✓ Updated to GitHub v${remoteVersion} (${totalPrompts} templates synced from ${repo}@${branch})`;
+    updateModalFeedback.textContent = msg;
+    updateModalFeedback.hidden = false;
+    showBannerNotification(`✓ Synced v${remoteVersion} from GitHub`);
+  } catch (err) {
+    updateModalFeedback.textContent = err.message || "Failed to pull update from GitHub.";
+    updateModalFeedback.classList.add("error");
+    updateModalFeedback.hidden = false;
+  } finally {
+    pullGithubUpdateBtn.disabled = false;
+    pullGithubUpdateBtn.textContent = "↻ Pull Latest from GitHub";
+  }
+}
+
+async function handleResetToBundledLibrary() {
+  state.categories = state.bundledCategories;
+  state.defaultVariables = state.bundledDefaultVariables;
+  state.syncedVersion = null;
+  state.lastSyncedAt = null;
+  state.cardVariableState = {};
+
+  await chrome.storage.local.remove(["remotePromptLibrary", "syncedVersion", "lastSyncedAt"]);
+
+  updateVersionModalLabels();
+  renderGlobalVariablesBar();
+  renderCategoryTabs();
+  renderPrompts();
+
+  updateModalFeedback.classList.remove("error");
+  updateModalFeedback.textContent = "Reverted to local bundled data/prompts.json.";
+  updateModalFeedback.hidden = false;
+}
+
+function openUpdateModal() {
+  githubRepoInput.value = state.githubSettings.repo || DEFAULT_GITHUB_REPO;
+  githubBranchInput.value = state.githubSettings.branch || DEFAULT_GITHUB_BRANCH;
+  githubTokenInput.value = state.githubSettings.token || "";
+  updateModalFeedback.hidden = true;
+  updateVersionModalLabels();
+
+  updateModal.hidden = false;
+  updateModal.setAttribute("aria-hidden", "false");
+}
+
+function closeUpdateModal() {
+  updateModal.hidden = true;
+  updateModal.setAttribute("aria-hidden", "true");
+}
+
+/**
  * Custom Prompt Builder Modal Logic
  */
 function openBuilderForNew() {
-  builderModalTitle.textContent = "New Custom Field Template";
+  builderModalTitle.textContent = "NEW CUSTOM FIELD TEMPLATE";
   customPromptIdInput.value = "";
   customTitleInput.value = "";
   customCategorySelect.value =
@@ -507,12 +744,12 @@ function openBuilderForNew() {
 
 function openBuilderForEdit(prompt, categoryId) {
   builderModalTitle.textContent = prompt.id
-    ? "Edit Custom Field Template"
-    : "Clone & Customize Template";
+    ? "EDIT CUSTOM FIELD TEMPLATE"
+    : "CLONE & CUSTOMIZE TEMPLATE";
   customPromptIdInput.value = prompt.id || "";
   customTitleInput.value = prompt.title || "";
   customCategorySelect.value = categoryId || prompt.categoryId || "daily-logs";
-  customTagsInput.value = (prompt.tags || []).join(", ");
+  customTagsInput.value = sanitizeTags(prompt.tags).join(", ");
   customTemplateTextarea.value = prompt.template || "";
 
   const varsObj = prompt.variables || {};
@@ -571,6 +808,15 @@ clearSearchBtn.addEventListener("click", () => {
   renderPrompts();
 });
 
+dismissSyncBannerBtn.addEventListener("click", () => {
+  syncStatusBanner.hidden = true;
+});
+
+openUpdateModalBtn.addEventListener("click", openUpdateModal);
+closeUpdateModalBtn.addEventListener("click", closeUpdateModal);
+pullGithubUpdateBtn.addEventListener("click", handlePullFromGitHub);
+resetBundledBtn.addEventListener("click", handleResetToBundledLibrary);
+
 applyGlobalVarsBtn.addEventListener("click", async () => {
   const inputs = globalVarsGridEl.querySelectorAll("input[data-global-key]");
   const updatedOverrides = { ...state.globalOverrides };
@@ -582,7 +828,6 @@ applyGlobalVarsBtn.addEventListener("click", async () => {
 
   await saveGlobalVariableOverrides(updatedOverrides);
 
-  // Push updated global values into all loaded cards that use those tokens
   Object.keys(state.cardVariableState).forEach((promptId) => {
     const cardMap = state.cardVariableState[promptId];
     Object.keys(updatedOverrides).forEach((tokenKey) => {
@@ -626,10 +871,12 @@ customPromptForm.addEventListener("submit", async (e) => {
   const id = existingId || `custom-${Date.now()}`;
   const title = customTitleInput.value.trim();
   const categoryId = customCategorySelect.value;
-  const tags = customTagsInput.value
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean);
+  const tags = sanitizeTags(
+    customTagsInput.value
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean)
+  );
   const template = customTemplateTextarea.value.trim();
   const variables = parseKeyValueLines(customDefaultsTextarea.value);
 
@@ -648,7 +895,6 @@ customPromptForm.addEventListener("submit", async (e) => {
     ? state.customPrompts.map((cp) => (cp.id === existingId ? newPromptObj : cp))
     : [newPromptObj, ...state.customPrompts];
 
-  // Reset cached card state for this prompt so updated defaults take effect immediately
   delete state.cardVariableState[id];
 
   await saveCustomPrompts(nextCustom);
@@ -657,10 +903,10 @@ customPromptForm.addEventListener("submit", async (e) => {
   renderPrompts();
 });
 
-// Close modal on Escape key
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !builderModal.hidden) {
-    closeBuilderModal();
+  if (e.key === "Escape") {
+    if (!builderModal.hidden) closeBuilderModal();
+    if (!updateModal.hidden) closeUpdateModal();
   }
 });
 
@@ -668,13 +914,23 @@ document.addEventListener("keydown", (e) => {
 async function initApp() {
   try {
     const response = await fetch(chrome.runtime.getURL("data/prompts.json"));
-    const data = await response.json();
+    const bundledData = await response.json();
 
-    state.categories = data.categories || [];
-    state.defaultVariables = data.defaultVariables || {};
+    state.bundledCategories = bundledData.categories || [];
+    state.bundledDefaultVariables = bundledData.defaultVariables || {};
 
     const persisted = await loadPersistedData();
     state.customPrompts = persisted.customPrompts;
+    state.githubSettings = persisted.githubSettings;
+    state.syncedVersion = persisted.syncedVersion;
+    state.lastSyncedAt = persisted.lastSyncedAt;
+
+    // Prefer the local bundled library if its version is newer than or equal to cached remote,
+    // or use remotePromptLibrary if pulled from GitHub
+    const activeLib = persisted.remotePromptLibrary || bundledData;
+    state.categories = activeLib.categories || state.bundledCategories;
+    state.defaultVariables = activeLib.defaultVariables || state.bundledDefaultVariables;
+
     state.globalOverrides = {
       ...state.defaultVariables,
       ...persisted.variableDefaults
@@ -695,4 +951,3 @@ async function initApp() {
 }
 
 initApp();
-

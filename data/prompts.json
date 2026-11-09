@@ -13,7 +13,8 @@
     "Material": "400A Main Distribution Panelboard",
     "ActionRequired": "Provide revised routing sketch or confirm ceiling plenum drop by 14:00 today",
     "Hazard": "Uncovered floor opening / missing perimeter guardrail",
-    "Recipient": "Project Manager / Owner Rep"
+    "Recipient": "Project Manager / Owner Rep",
+    "Notes": ""
   },
   "categories": [
     {
@@ -21,6 +22,15 @@
       "name": "Daily Logs & Progress",
       "badge": "LOGS",
       "prompts": [
+        {
+          "id": "dl-record-clarity",
+          "title": "Daily Log Clarity",
+          "tags": ["daily log", "rewrite", "clarity", "chronological", "copilot"],
+          "variables": {
+            "Notes": ""
+          },
+          "template": "Rewrite this daily work record so it clearly documents the purpose of the work, the problem that was addressed, the work that was completed, the outcome, and any follow-up required. Organize the information in chronological order using concise, professional language suitable for permanent maintenance and field records. Preserve all facts and do not add information that was not provided.\n\nNotes:\n{{Notes}}"
+        },
         {
           "id": "dl-standup-summary",
           "title": "Daily Field Log Entry (Procore / PlanGrid)",
@@ -35,19 +45,9 @@
           "template": "DAILY FIELD LOG SUMMARY\nWeather/Site Conditions: {{Weather}}\nTrade/Subcontractor: {{Trade}} ({{CrewSize}})\nActive Work Area: {{Location}}\n\nWork Performed Today:\n- Completed overhead rough-in and hanger installation at {{Location}}.\n- Verified layout elevations against latest coordinated shop drawings.\n- Maintained housekeeping and cleared debris from egress paths.\n\nSchedule & Lookahead Status:\n- {{Impact}}."
         },
         {
-          "id": "dl-record-clarity",
-          "title": "Daily Record Clarity",
-          "tags": ["scott", "facilities", "rewrite", "daily record", "chronological"],
-          "variables": {
-            "Location": "Level 2 - Area B Corridor",
-            "Trade": "Electrical (MEP)"
-          },
-          "template": "Rewrite this daily work record for {{Trade}} at {{Location}} so it clearly documents the purpose of the work, the problem that was addressed, the work that was completed, the outcome, and any follow-up required. Organize the information in chronological order using concise, professional language suitable for permanent maintenance and field records. Preserve all facts and do not add information that was not provided."
-        },
-        {
           "id": "dl-completed-work-summary",
           "title": "Completed Work Summary",
-          "tags": ["scott", "facilities", "completed work", "summary", "verification"],
+          "tags": ["facilities", "completed work", "summary", "verification"],
           "variables": {
             "Trade": "Electrical (MEP)",
             "Location": "Level 2 - Area B Corridor"
@@ -57,7 +57,7 @@
         {
           "id": "dl-weekly-progress",
           "title": "Weekly Progress Report",
-          "tags": ["scott", "facilities", "weekly", "report", "priorities"],
+          "tags": ["facilities", "weekly", "report", "priorities"],
           "variables": {
             "Location": "Main Building - Levels 1-3",
             "Impact": "Critical path remains on track; 2 open RFIs pending A/E review"
@@ -67,7 +67,7 @@
         {
           "id": "dl-project-update",
           "title": "Project Update",
-          "tags": ["scott", "facilities", "project update", "status", "next steps"],
+          "tags": ["facilities", "project update", "status", "next steps"],
           "variables": {
             "Location": "Level 2 - Area B Corridor",
             "Impact": "Rough-in 85% complete; awaiting ceiling grid release"
@@ -110,7 +110,7 @@
         {
           "id": "sd-contractor-instructions",
           "title": "Contractor Instructions",
-          "tags": ["scott", "facilities", "directive", "instructions", "scope"],
+          "tags": ["facilities", "directive", "instructions", "scope"],
           "variables": {
             "Subcontractor": "Apex Electrical Services",
             "Location": "Level 2 - Area B Corridor",
@@ -121,7 +121,7 @@
         {
           "id": "sd-maintenance-notice",
           "title": "Maintenance / Utility Shutdown Notice",
-          "tags": ["scott", "facilities", "maintenance notice", "shutdown", "outage"],
+          "tags": ["facilities", "maintenance notice", "shutdown", "outage"],
           "variables": {
             "Location": "Level 2 - Area B Corridor",
             "Issue": "Scheduled 4-hour electrical panel tie-in shutdown",
@@ -139,7 +139,7 @@
         {
           "id": "sf-incident-report",
           "title": "Incident Report (Factual & Neutral)",
-          "tags": ["scott", "facilities", "safety", "incident", "near miss", "osha"],
+          "tags": ["facilities", "safety", "incident", "near miss", "osha"],
           "variables": {
             "Location": "Level 2 - Area B Corridor",
             "Subcontractor": "Apex Electrical Services",
@@ -174,7 +174,7 @@
         {
           "id": "sf-facility-closure",
           "title": "Facility / Area Closure Notice",
-          "tags": ["scott", "facilities", "closure", "barricade", "hoisting"],
+          "tags": ["facilities", "closure", "barricade", "hoisting"],
           "variables": {
             "Location": "Level 2 - Area B Corridor",
             "Issue": "Overhead structural steel hoisting and decking",
@@ -219,7 +219,7 @@
         {
           "id": "rfi-work-order-response",
           "title": "Work Order / Punch Item Response",
-          "tags": ["scott", "facilities", "work order", "punchlist", "response"],
+          "tags": ["facilities", "work order", "punchlist", "response"],
           "variables": {
             "Location": "Level 2 - Area B Corridor",
             "Issue": "Ceiling diffuser alignment and damper balancing"
@@ -229,7 +229,7 @@
         {
           "id": "rfi-budget-justification",
           "title": "Budget / Field Change Justification",
-          "tags": ["scott", "facilities", "budget", "justification", "cost"],
+          "tags": ["facilities", "budget", "justification", "cost"],
           "variables": {
             "Issue": "Unforeseen existing underground utility relocation",
             "Impact": "Prevents 5-day foundation excavation stoppage"
@@ -271,7 +271,7 @@
         {
           "id": "mi-material-request",
           "title": "Material Request",
-          "tags": ["scott", "facilities", "material", "expedite", "purchasing"],
+          "tags": ["facilities", "material", "expedite", "purchasing"],
           "variables": {
             "Material": "400A Main Distribution Panelboard",
             "Location": "Level 2 - Area B Corridor",
@@ -290,42 +290,42 @@
         {
           "id": "em-clarify-purpose",
           "title": "Clarify Purpose",
-          "tags": ["scott", "email", "clarify", "purpose", "next step"],
+          "tags": ["email", "clarify", "purpose", "next step"],
           "variables": {},
           "template": "Rewrite this email so the purpose is immediately clear. Start with the reason for the email, organize the information logically, remove unnecessary words, highlight any requested action, and end with a clear next step. Keep my writing style natural, professional, and friendly without sounding like AI wrote it."
         },
         {
           "id": "em-professional",
           "title": "Professional Tone",
-          "tags": ["scott", "email", "professional", "confident"],
+          "tags": ["email", "professional", "confident"],
           "variables": {},
           "template": "Rewrite this email to sound confident, respectful, and professional while remaining natural and easy to read."
         },
         {
           "id": "em-friendly",
           "title": "Friendly & Warm",
-          "tags": ["scott", "email", "friendly", "warm", "personable"],
+          "tags": ["email", "friendly", "warm", "personable"],
           "variables": {},
           "template": "Rewrite this email so it sounds warm, positive, and personable without losing professionalism."
         },
         {
           "id": "em-short-clear",
           "title": "Short & Clear",
-          "tags": ["scott", "email", "short", "concise", "brief"],
+          "tags": ["email", "short", "concise", "brief"],
           "variables": {},
           "template": "Rewrite this email using the fewest words possible while keeping every important detail."
         },
         {
           "id": "em-customer-reply",
           "title": "Client / Owner / Customer Reply",
-          "tags": ["scott", "email", "customer", "owner", "client"],
+          "tags": ["email", "customer", "owner", "client"],
           "variables": {},
           "template": "Rewrite this email so the customer feels heard and respected. Clearly explain the solution, avoid blame, and end with an invitation to contact me with questions."
         },
         {
           "id": "em-principal-request",
           "title": "Stakeholder / Principal Request Response",
-          "tags": ["scott", "facilities", "principal", "administrator", "stakeholder"],
+          "tags": ["facilities", "principal", "administrator", "stakeholder"],
           "variables": {
             "Location": "Level 2 - Area B Corridor"
           },
@@ -334,21 +334,21 @@
         {
           "id": "em-follow-up",
           "title": "Follow Up",
-          "tags": ["scott", "email", "follow up", "reminder", "update"],
+          "tags": ["email", "follow up", "reminder", "update"],
           "variables": {},
           "template": "Rewrite this as a professional follow-up email. Briefly remind the recipient of the previous communication, explain why I am following up, and ask for an update without sounding pushy."
         },
         {
           "id": "em-grammar-only",
           "title": "Grammar Only",
-          "tags": ["scott", "email", "grammar", "spelling", "proofread"],
+          "tags": ["email", "grammar", "spelling", "proofread"],
           "variables": {},
           "template": "Correct grammar, spelling, punctuation, and formatting only. Do not change my wording, tone, or meaning."
         },
         {
           "id": "em-exec-summary",
           "title": "Executive Summary (Under 30 Seconds)",
-          "tags": ["scott", "email", "executive", "summary", "30 seconds"],
+          "tags": ["email", "executive", "summary", "30 seconds"],
           "variables": {},
           "template": "Rewrite this email so a busy executive can understand it in less than 30 seconds. Put the purpose first, remove unnecessary details, and end with the action requested."
         }

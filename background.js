@@ -12,7 +12,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   try {
     await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
 
-    if (details.reason === "install") {
+    if (details.reason === "install" || details.reason === "update") {
       const response = await fetch(DEFAULT_PROMPTS_URL);
       const data = await response.json();
       const existing = await chrome.storage.local.get(["customPrompts", "variableDefaults"]);
@@ -23,9 +23,12 @@ chrome.runtime.onInstalled.addListener(async (details) => {
       if (!existing.variableDefaults) {
         await chrome.storage.local.set({ variableDefaults: data.defaultVariables || {} });
       }
+      // On local extension update, clear cached remote library so new bundled prompts load cleanly
+      if (details.reason === "update") {
+        await chrome.storage.local.remove(["remotePromptLibrary", "syncedVersion"]);
+      }
     }
   } catch (err) {
     console.error("Initialization error in background service worker:", err);
   }
 });
-

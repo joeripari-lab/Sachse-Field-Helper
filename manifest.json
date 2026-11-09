@@ -1,12 +1,16 @@
 {
   "manifest_version": 3,
   "name": "Superintendent Field Assistant",
-  "version": "1.0.0",
-  "description": "High-contrast jobsite side panel for construction superintendents to hydrate and copy field-log templates, notices, RFIs, and prompts.",
+  "version": "1.1.0",
+  "description": "High-contrast jobsite side panel for Sachse Construction superintendents to hydrate and copy field-log templates, notices, RFIs, and prompts.",
   "permissions": [
     "sidePanel",
     "clipboardWrite",
     "storage"
+  ],
+  "host_permissions": [
+    "https://raw.githubusercontent.com/*",
+    "https://api.github.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -18,4 +22,3 @@
     "default_path": "sidepanel.html"
   }
 }
-
