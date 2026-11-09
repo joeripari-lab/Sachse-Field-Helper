@@ -12,7 +12,7 @@ const state = {
   customPrompts: [],     // Saved in chrome.storage.local & synced when possible
   activeCategory: "all",
   searchQuery: "",
-  currentVersion: "1.2.0"
+  currentVersion: "1.3.0"
 };
 
 // DOM References
@@ -46,7 +46,7 @@ const customDefaultsTextarea = document.getElementById("customDefaults");
 const quickTokenBar = document.getElementById("quickTokenBar");
 
 /**
- * Compare two semver strings (e.g. "1.2.0" vs "1.1.0")
+ * Compare two semver strings (e.g. "1.3.0" vs "1.1.0")
  * Returns 1 if a > b, -1 if a < b, 0 if equal
  */
 function compareVersions(a, b) {
@@ -63,9 +63,9 @@ function compareVersions(a, b) {
 
 function getLocalExtensionVersion() {
   try {
-    return chrome.runtime.getManifest().version || "1.2.0";
+    return chrome.runtime.getManifest().version || "1.3.0";
   } catch (_) {
-    return "1.2.0";
+    return "1.3.0";
   }
 }
 
