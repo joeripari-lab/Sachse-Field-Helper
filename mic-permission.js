@@ -36,3 +36,4 @@ retryPermBtn.addEventListener("click", requestMicrophone);
 
 // Trigger automatically on load
 requestMicrophone();
+
