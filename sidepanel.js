@@ -1,4 +1,4 @@
-// sidepanel.js - DOM handling, variable injection, clipboard copy, search, custom templates & one-click GitHub Update
+// sidepanel.js - DOM handling, variable injection, voice dictation, clipboard copy, search, custom templates & one-click GitHub Update
 
 const TOKEN_REGEX = /\{\{\s*([a-zA-Z0-9_ -]+?)\s*\}\}/g;
 const GITHUB_REPO = "joeripari-lab/Sachse-Field-Helper";
@@ -12,8 +12,13 @@ const state = {
   customPrompts: [],     // Saved in chrome.storage.local & synced when possible
   activeCategory: "all",
   searchQuery: "",
-  currentVersion: "1.3.0"
+  currentVersion: "1.4.0"
 };
+
+// Active SpeechRecognition controller state
+let activeRecognition = null;
+let activeMicButton = null;
+let activeInputEl = null;
 
 // DOM References
 const headerVersionBadge = document.getElementById("headerVersionBadge");
@@ -46,7 +51,131 @@ const customDefaultsTextarea = document.getElementById("customDefaults");
 const quickTokenBar = document.getElementById("quickTokenBar");
 
 /**
- * Compare two semver strings (e.g. "1.3.0" vs "1.1.0")
+ * Voice Dictation Engine (Option 1: Web Speech API + Option 2: Win+H hint)
+ */
+const SpeechRecognitionEngine =
+  window.SpeechRecognition || window.webkitSpeechRecognition || null;
+
+function stopActiveDictation() {
+  if (activeRecognition) {
+    try {
+      activeRecognition.onend = null;
+      activeRecognition.stop();
+    } catch (_) {
+      // Ignore stop errors
+    }
+    activeRecognition = null;
+  }
+  if (activeMicButton) {
+    activeMicButton.classList.remove("listening");
+    activeMicButton.textContent = activeMicButton.dataset.defaultLabel || "🎙️";
+    activeMicButton = null;
+  }
+  if (activeInputEl) {
+    activeInputEl.classList.remove("listening-input");
+    activeInputEl = null;
+  }
+}
+
+function toggleDictationForInput(inputEl, micBtn, onValueChange) {
+  if (!SpeechRecognitionEngine) {
+    showBanner("Browser speech recognition is unavailable. Press Win + H to use Windows Voice Typing.", true);
+    inputEl.focus();
+    return;
+  }
+
+  // If clicking the same active mic button, stop recording
+  if (activeMicButton === micBtn) {
+    stopActiveDictation();
+    return;
+  }
+
+  // Stop any previously active dictation on another field
+  stopActiveDictation();
+
+  const recognition = new SpeechRecognitionEngine();
+  recognition.lang = "en-US";
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  const baseTextBeforeSession = inputEl.value
+    ? inputEl.value.trimEnd() + " "
+    : "";
+  let finalizedSessionText = "";
+
+  activeRecognition = recognition;
+  activeMicButton = micBtn;
+  activeInputEl = inputEl;
+
+  micBtn.classList.add("listening");
+  micBtn.textContent =
+    micBtn.dataset.defaultLabel && micBtn.dataset.defaultLabel.includes("Dictate")
+      ? "● Stop"
+      : "●";
+  inputEl.classList.add("listening-input");
+  inputEl.focus();
+
+  recognition.onresult = (event) => {
+    let interimTranscript = "";
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const transcript = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        finalizedSessionText += transcript.trim() + " ";
+      } else {
+        interimTranscript += transcript;
+      }
+    }
+
+    const combined = (baseTextBeforeSession + finalizedSessionText + interimTranscript).trimStart();
+    inputEl.value = combined;
+    if (typeof onValueChange === "function") {
+      onValueChange(combined);
+    }
+  };
+
+  recognition.onerror = (event) => {
+    const errCode = event.error;
+    stopActiveDictation();
+
+    if (errCode === "not-allowed" || errCode === "service-not-allowed") {
+      showBanner("Opening one-time microphone permission prompt...", false);
+      chrome.tabs.create({ url: chrome.runtime.getURL("mic-permission.html") });
+    } else if (errCode !== "aborted" && errCode !== "no-speech") {
+      showBanner(`Dictation error (${errCode}). Tip: You can also press Win + H.`, true);
+    }
+  };
+
+  recognition.onend = () => {
+    stopActiveDictation();
+  };
+
+  try {
+    recognition.start();
+  } catch (err) {
+    stopActiveDictation();
+  }
+}
+
+function createMicButton(isFullLabel = false) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn-mic";
+  const label = isFullLabel ? "🎙️ Dictate" : "🎙️";
+  btn.dataset.defaultLabel = label;
+  btn.textContent = label;
+  btn.title = "Click to dictate with your microphone (or press Win + H)";
+  return btn;
+}
+
+// Listen for one-time microphone permission completion from mic-permission.html
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg && msg.type === "MIC_PERMISSION_GRANTED") {
+    showBanner("✓ Microphone enabled! Click any 🎙️ button to dictate.", false);
+  }
+});
+
+/**
+ * Compare two semver strings (e.g. "1.4.0" vs "1.3.0")
  * Returns 1 if a > b, -1 if a < b, 0 if equal
  */
 function compareVersions(a, b) {
@@ -63,9 +192,9 @@ function compareVersions(a, b) {
 
 function getLocalExtensionVersion() {
   try {
-    return chrome.runtime.getManifest().version || "1.3.0";
+    return chrome.runtime.getManifest().version || "1.4.0";
   } catch (_) {
-    return "1.3.0";
+    return "1.4.0";
   }
 }
 
@@ -259,9 +388,14 @@ function renderGlobalVariablesBar() {
     const fieldWrap = document.createElement("div");
     fieldWrap.className = "var-field";
 
+    const labelRow = document.createElement("div");
+    labelRow.className = "var-label-row";
+
     const label = document.createElement("label");
     label.className = "var-label";
     label.textContent = `{{${key}}}`;
+
+    const micBtn = createMicButton(false);
 
     const input = document.createElement("input");
     input.type = "text";
@@ -269,7 +403,13 @@ function renderGlobalVariablesBar() {
     input.dataset.globalKey = key;
     input.value = state.globalOverrides[key] ?? state.defaultVariables[key] ?? "";
 
-    fieldWrap.appendChild(label);
+    micBtn.addEventListener("click", () => {
+      toggleDictationForInput(input, micBtn, null);
+    });
+
+    labelRow.appendChild(label);
+    labelRow.appendChild(micBtn);
+    fieldWrap.appendChild(labelRow);
     fieldWrap.appendChild(input);
     globalVarsGridEl.appendChild(fieldWrap);
   });
@@ -314,6 +454,8 @@ function renderCategoryTabs() {
  * Filter and render accordion sections & prompt cards
  */
 function renderPrompts() {
+  stopActiveDictation();
+
   const query = state.searchQuery.trim().toLowerCase();
   const mergedCategories = getMergedCategories();
   promptsContainerEl.innerHTML = "";
@@ -379,7 +521,7 @@ function renderPrompts() {
 }
 
 /**
- * Create a single Prompt Card with inline variable inputs (including multiline Notes box), live preview, and one-click copy
+ * Create a single Prompt Card with inline variable inputs (including multiline Notes box + voice dictation), live preview, and one-click copy
  */
 function buildPromptCardElement(prompt, categoryId) {
   const card = document.createElement("article");
@@ -473,7 +615,10 @@ function buildPromptCardElement(prompt, categoryId) {
     const isNotesOnly = tokens.length === 1 && tokens[0].toLowerCase() === "notes";
     const varsHeader = document.createElement("div");
     varsHeader.className = "vars-box-header";
-    varsHeader.innerHTML = `<span>${isNotesOnly ? "Field Notes Input" : `Inline Variables (${tokens.length})`}</span>`;
+    varsHeader.innerHTML = `
+      <span>${isNotesOnly ? "Field Notes Input" : `Inline Variables (${tokens.length})`}</span>
+      <span class="win-h-hint" title="Click 🎙️ or press Windows Key + H to dictate">🎙️ or Win+H</span>
+    `;
     varsBox.appendChild(varsHeader);
 
     const varsGrid = document.createElement("div");
@@ -489,9 +634,14 @@ function buildPromptCardElement(prompt, categoryId) {
         ["Issue", "Impact", "ActionRequired", "Hazard"].includes(tokenName);
       field.className = `var-field ${isLongField ? "full-width" : ""}`;
 
+      const labelRow = document.createElement("div");
+      labelRow.className = "var-label-row";
+
       const label = document.createElement("label");
       label.className = "var-label";
       label.textContent = isMultilineNotes ? "Notes (copied with prompt instruction)" : `{{${tokenName}}}`;
+
+      const micBtn = createMicButton(isMultilineNotes);
 
       let inputEl;
       if (isMultilineNotes) {
@@ -499,21 +649,31 @@ function buildPromptCardElement(prompt, categoryId) {
         inputEl.className = "var-input var-textarea";
         inputEl.rows = 4;
         inputEl.value = valStr;
-        inputEl.placeholder = "Paste or type your raw daily log notes here...";
+        inputEl.placeholder = "Type, paste, or click 🎙️ Dictate (or press Win+H) to speak your daily log notes...";
       } else {
         inputEl = document.createElement("input");
         inputEl.type = "text";
         inputEl.className = "var-input";
         inputEl.value = valStr;
-        inputEl.placeholder = `Enter ${tokenName}...`;
+        inputEl.placeholder = `Enter or dictate ${tokenName}...`;
       }
 
-      inputEl.addEventListener("input", (e) => {
-        currentValues[tokenName] = e.target.value;
+      const updateValueAndPreview = (newVal) => {
+        currentValues[tokenName] = newVal;
         previewEl.innerHTML = buildHighlightedPreviewHtml(prompt.template, currentValues);
+      };
+
+      inputEl.addEventListener("input", (e) => {
+        updateValueAndPreview(e.target.value);
       });
 
-      field.appendChild(label);
+      micBtn.addEventListener("click", () => {
+        toggleDictationForInput(inputEl, micBtn, updateValueAndPreview);
+      });
+
+      labelRow.appendChild(label);
+      labelRow.appendChild(micBtn);
+      field.appendChild(labelRow);
       field.appendChild(inputEl);
       varsGrid.appendChild(field);
     });
@@ -531,6 +691,7 @@ function buildPromptCardElement(prompt, categoryId) {
   copyBtn.textContent = "📋 Copy Copilot Prompt";
 
   copyBtn.addEventListener("click", async () => {
+    stopActiveDictation();
     const hydratedText = hydrateTemplate(prompt.template, currentValues);
     try {
       await navigator.clipboard.writeText(hydratedText);
@@ -689,6 +850,7 @@ function openBuilderForEdit(prompt, categoryId) {
 }
 
 function closeBuilderModal() {
+  stopActiveDictation();
   builderModal.hidden = true;
   builderModal.setAttribute("aria-hidden", "true");
 }

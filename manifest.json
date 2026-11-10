@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Superintendent Field Assistant",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "High-contrast jobsite side panel for Sachse Construction superintendents to hydrate and copy field-log templates, notices, RFIs, and prompts.",
   "icons": {
     "16": "icons/icon16.png",

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enable Microphone — Sachse Field Assistant</title>
+  <link rel="stylesheet" href="sidepanel.css" />
+  <style>
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background-color: var(--structural-blue);
+      padding: 24px;
+    }
+    .perm-card {
+      max-width: 460px;
+      width: 100%;
+      background: #FFFFFF;
+      border-top: 6px solid var(--foundation-green);
+      padding: 24px;
+      border-radius: 2px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+      text-align: center;
+    }
+    .perm-title {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      color: var(--structural-blue);
+      margin: 10px 0 8px;
+      text-transform: uppercase;
+    }
+    .perm-desc {
+      font-size: 13.5px;
+      color: var(--base-black);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .perm-status {
+      padding: 10px 12px;
+      border-radius: 2px;
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 14px;
+      background-color: #F4F6F6;
+      border-left: 4px solid var(--iron-teal);
+      color: var(--structural-blue);
+    }
+    .perm-status.error {
+      border-left-color: #b91c1c;
+      color: #991b1b;
+      background-color: #fef2f2;
+    }
+  </style>
+</head>
+<body>
+  <div class="perm-card">
+    <span class="brand-eyebrow" style="color: var(--shaded-green);">SACHSE CONSTRUCTION // VOICE DICTATION</span>
+    <h1 class="perm-title">Allow Microphone Access</h1>
+    <p class="perm-desc">
+      Click <strong>"Allow"</strong> in the browser prompt at the top-left of this window so you can dictate directly into the Side Panel fields.
+    </p>
+    <div id="permStatus" class="perm-status">
+      Waiting for browser microphone permission...
+    </div>
+    <button id="retryPermBtn" class="btn btn-primary" type="button">
+      🎙️ Request Microphone Access
+    </button>
+  </div>
+  <script src="mic-permission.js"></script>
+</body>
+</html>
